@@ -1,6 +1,6 @@
 # TinyGramM1
 
-##Initialisation/build
+## Initialisation/build
 ```
  git clone hhttps://github.com/TristanFaine/TinyGramM1.git
  cd TinyGramM1
