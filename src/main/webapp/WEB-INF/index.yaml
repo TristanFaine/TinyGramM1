@@ -1,6 +1,6 @@
 indexes:
-- kind: Friend 
+- kind: User 
   properties: 
-    - name: friends 
-    - name: age 
+    - name: name
+    - name: age
     
