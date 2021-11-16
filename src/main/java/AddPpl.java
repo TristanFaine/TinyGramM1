@@ -25,13 +25,13 @@ public class AddPpl extends HttpServlet {
     public void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException {
         response.setContentType("text/html");
         response.setCharacterEncoding("UTF-8");
-        String id = request.getReader().readLine();
+        String id = request.getParameter("id");
 
         Entity moi = new Entity("User", id);
 
         DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
         datastore.put(moi);
 
-        response.getWriter().print(id);
+        response.getWriter().print("\"" + id + "\"");
     }
 }

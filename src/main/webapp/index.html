@@ -22,9 +22,12 @@
             m.request({
                 method: 'POST',
                 url: '/addPpl',
-                body: { id: document.getElementById('id').value }
+                params: {
+                    id: document.getElementById('id').value
+                }
             }).then(data => {
-                m.render(document.getElementById("reponse"), `Vous êtes enregistré avec l’adresse ${data.id}`)
+                m.render(document.getElementById("reponse"),
+                    `Vous êtes enregistré avec l’adresse ${data}`)
             })
         })
     </script>
