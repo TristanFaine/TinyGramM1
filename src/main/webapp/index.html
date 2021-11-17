@@ -4,10 +4,11 @@
 <head>
     <meta http-equiv="content-type" content="application/xhtml+xml; charset=UTF-8" />
     <title>WITNESS ME</title>
+    <script src="https://unpkg.com/mithril/mithril.js"></script>
 </head>
 
 <body>
-    <script src="https://unpkg.com/mithril/mithril.js"></script>
+    <!--
     <h1>Tinygram</h1>
     <form id="inscription">
         <h2>S’inscrire</h2>
@@ -31,6 +32,105 @@
             })
         })
     </script>
+-->
 </body>
+
+<!---
+Notes sur le routage : On peut mettre toutes les actions possibles dans ce fichier, mais est-ce vraiment une bonne idée...
+!-->
+<!--
+    Note bonus : Cliquer sur le bouton depuis l'implementation mithril force le rafraichissement de la page... c'est pas censé faire ça normalement...
+    oh mais attends j'ai pas implémenté le script entier. oops
+-->
+<script>
+    var Splash = {
+        view: function () {
+            return m("main", [
+                m("h1", {
+                    class: "title"
+                }, "Tinygram"),
+                m("div", [
+                    m("a", {
+                        href: "#!/AddUser"
+                    }, "Ajouter un utilisateur"),
+                    m("a", {
+                        href: "#!/MockLogin"
+                    }, "Tentative de connexion Google"),
+                    m("a", {
+                        href: "#!/MockProfile"
+                    }, "Affichage infos Google (TODO : mettre ça autre part genre une notification 'vous etes connectés'")
+                ])
+            ])
+        }
+    }
+    // Probleme, require n'est pas possible sur du js client... On réflichira plus tard sur comment implémenter des vues.
+    //var AddUser = require("./views/AddUser")
+
+    //Si l'on souhaite placer un eventlistener, c'est lorsque la vue est crée.. faire un vnode?
+    var AddUser = {
+        view: function () {
+            return m("main", [
+                m("h1", {
+                    class: "title"
+                }, "Tinygram"),
+                m("form", {
+                    id: "inscription", onsubmit: e => {
+                        e.preventDefault()
+                        m.request({
+                            method: 'POST',
+                            url: '/addPpl',
+                            params: {
+                                id: document.getElementById('id').value
+                            }
+                        }).then(data => {
+                            m.render(document.getElementById("reponse"),
+                                `Vous êtes enregistré avec l’adresse ${data}`)
+                        })
+                    } 
+                }, [
+            m("h2", {
+                class: "formtitle"
+            }, "S'inscrire"),
+            m("label", {
+                for: "id"
+            }, "Adresse"),
+            m("input", {
+                id: "id",
+                type: "text",
+                name: "id",
+                value: ""
+            }),
+            m("input", {
+                type: "submit",
+                name: "C'est parti",
+            })
+        ]),
+        m("div", {
+            id: "reponse"
+                }, "Pas encore de reponse...")
+            ])
+        }
+    }
+
+    m.route(document.body, "/splash", {
+        "/splash": Splash,
+        "/AddUser": AddUser
+    })
+
+
+</script>
+
+<!---
+Checklist :
+- Nouveau projet dans GCP V
+- Utiliser datastore pour insérer/query ~
+- Routage/backend pour naviguer l'UI (voir tuto mithril js) X
+- Produire des services API test (voir docs java v11 https://cloud.google.com/appengine/docs/standard/java11) X
+- Tester avec produit fourni ds cloud platform et/ou postman X
+- Mettre en place google login (v2) X
+- Produire les services API correspondant aux tâches listés dans le projet
+(profil de quelqu'un, bouton follow, liste de posts, post un post, like un post) X
+- Faire le frontend X
+!-->
 
 </html>
