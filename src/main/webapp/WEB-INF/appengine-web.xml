@@ -10,6 +10,8 @@
     </include>
     <include path="/**.js" >
     </include>
+    <include path="/favicon.ico">
+    </include>
     
   </static-files>
   <system-properties>
