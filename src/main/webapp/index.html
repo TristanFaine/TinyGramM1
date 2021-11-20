@@ -7,11 +7,14 @@
     <script src="https://unpkg.com/mithril/mithril.js"></script>
 </head>
 
+<!-- TODO: rendre cette barre beaucoup plus jolie
+     Je verrais bien un bouton "VIEW PROFILE" en haut à droite-->
 <body>
     <div class="topnav">
         <a class="active" href="#Splash">Menu Principal</a>
         <button id="sign-in-or-out-button">Sign In/Authorize</button>
         <button id="revoke-access-button" style="display: none">Revoke Access</button>
+        <button id="profile-access-button" style="display: none">View profile</button>
     </div>
     <hr>
     <div id="auth-status" style="display: inline; padding-left: 25px"></div><hr>
@@ -23,13 +26,12 @@
 <script>
     //Si ça bug trop, utiliser la version simplifiée : https://developers.google.com/identity/gsi/web/guides/get-google-api-clientid?hl=en
     //Vu qu'on compte juste utiliser googleUser.getAuthResponse().id_token;
-
-
     //https://developers.google.com/identity/sign-in/web/backend-auth?hl=en
-    //Voir ceci pour l'auth en back^
+    //Voir ceci pour l'auth en back java^
 
-    //AKA just for sign-in
     var GoogleAuth //Google Auth object.
+
+    //TODO: find a way to not get the "basic" info, aka name, email, etc, we don't really care about these, we just want a login solution
     var SCOPE = 'openid';
 
 
@@ -37,21 +39,19 @@
         // Load the API client and auth2 library
         gapi.load('client:auth2', initClient);
     }
-    function initClient() {
-        
+
+    function initClient() { 
         gapi.client.init({
             'apiKey': 'AIzaSyDKHegSyxOiV8N-7RyKUfBL5Ks_cgoJEZA',
             'clientId': '852760108989-gqn73cl4kuk3nb5a8mgf38rgace4u3lk.apps.googleusercontent.com',
             'scope': SCOPE
         }).then(function () {
             GoogleAuth = gapi.auth2.getAuthInstance();
-            console.log("DEBUG: you see this if properly connected to client credential")
-            console.log(GoogleAuth)
+            console.log("DEBUG: connected to client credential")
             //Listen for sign-in stage changes.
             GoogleAuth.isSignedIn.listen(updateSigninStatus);
 
             //Handle initial sign-in state
-            var user = GoogleAuth.currentUser.get();
             setSigninStatus();
 
             document.getElementById("sign-in-or-out-button").addEventListener('click',function() {
@@ -60,31 +60,56 @@
             document.getElementById("revoke-access-button").addEventListener('click', function() {
                 revokeAccess();
             }, false);
+            document.getElementById("profile-access-button").addEventListener('click', function() {
+                showProfile();
+            }, false);
         })
     }
 
     function handleAuthClick() {
-        
         if (GoogleAuth.isSignedIn.get()) {
             GoogleAuth.signOut();
-            //TODO: change page layout/route based on current location?
-            // Example : on the "profileDisplay" page, reload layout
-            // AKA : m.route.set("/MockProfile", {auth: false})
-            // Could cause problem if we do something like :
-            //this "post picture" button will log you in if not logged in,
-            // THEN post the picture
-            // and having two different functions do the same thing would be confusing..
         } else {
             GoogleAuth.signIn();
         }
     }
+
     function revokeAccess() {
         GoogleAuth.disconnect();
     }
 
+    function routeSelect(route) {
+        switch(route) {
+            case '/splash':
+                showHome();
+                break;
+            case '/Profile':
+                showProfile();
+                break;
+            default:
+                showHome();
+                break;
+        }
+    }
 
-    var isAuthorized;
-    var currentApiRequest;
+    function showHome() {
+        m.route.set("/Splash")
+    }
+
+    function showProfile() {
+        //TODO :faire un appel API ici, et renvoyer juste ce qui est nécessaire dans un Array je suppose
+        //CECI N'INCLUS DONC PAS LE TOKEN!!!!!
+        if (GoogleAuth.currentUser.get().hasGrantedScopes(SCOPE)) {
+            var a = GoogleAuth.currentUser.get().getBasicProfile().getName();
+            var b = GoogleAuth.currentUser.get().getBasicProfile().getImageUrl();
+            var c = GoogleAuth.currentUser.get().getAuthResponse().id_token;
+            var d = GoogleAuth.currentUser.get().hasGrantedScopes(SCOPE);
+        }
+        m.route.set("/Profile", {userName: a, userImage: b, userToken: c, authStatus: d})
+    }
+
+    var isAuthorized; //unused for now, this doesn't even have a value on init
+    var currentApiRequest; //unused for now
     /**
      * Store the request details. Then check to determine whether the user
      * has authorized the application.
@@ -96,7 +121,7 @@
         if (isAuthorized) {
             // Make API request
             // gapi.client.request(requestDetails)...
-            // ou un truc XHR
+            // ou un truc XHR/API
 
             // Reset currentApiRequest variable.
             currentApiRequest = {};
@@ -111,6 +136,7 @@
      * before the request executed. In that case, proceed with that API request.
      */
     //AKA : this is called after GoogleAuth.signIn, no matter what.
+    //Note: don't bother doing a GoogleAuth.signIn.then()... The timing of the resolved Promise is incorrect
     function updateSigninStatus(isSignedIn) {
         setSigninStatus();
     }
@@ -121,17 +147,21 @@
         if (isAuthorized) {
             document.getElementById("sign-in-or-out-button").innerHTML = ("Sign out");
             document.getElementById("revoke-access-button").style.display = "inline-block";
-            document.getElementById("auth-status").innerHTML = ("Connecté + accés autorisé");
+            document.getElementById("profile-access-button").style.display = "inline-block";
+            document.getElementById("auth-status").innerHTML = ("Connecté + permissions accordées");
         } else {
             document.getElementById("sign-in-or-out-button").innerHTML = ("Sign In/Authorize");
-            document.getElementById("revoke-access-button").style.display = "none"; 
-            document.getElementById("auth-status").innerHTML = ("Déconnecté, ou accés non autorisé");
+            document.getElementById("revoke-access-button").style.display = "none";
+            document.getElementById("profile-access-button").style.display = "none";
+            document.getElementById("auth-status").innerHTML = ("Déconnecté, ou permissions non accordées");
         }
+        //Quick and dirty routing on signin status change, but it works
+        routeSelect(m.route.get().split('?')[0]);
     }
 
 </script>
 
-<script type="module" src="routing.js"></script>
+<script type="module" src="controller/routing.js"></script>
 
 <script async defer src="https://apis.google.com/js/api.js" onload="this.onload=function(){};handleClientLoad()"
     onreadystatechange="if (this.readyState === 'complete') this.onload()">
@@ -155,9 +185,10 @@ Checklist :
 
 
 <!--
-TODO:
-Pour le routing/front/OAuth, voir si les trucs du genre User.getBasicProfile().getName() fonctionnent.
-Faire un fichier controlleur.js
+TODO FRONT:
+Afficher liste users datastore
+idem pour liste posts images
+Faut donc aller faire du back d'abord
 
 -->
 
