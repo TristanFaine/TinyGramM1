@@ -21,6 +21,7 @@ var Splash = {
 
 import Profile from '/../views/Profile.js';
 import AddUser from '/../views/AddUser.js';
+import MockImage from '/../views/MockImage.js';
 
 var app = document.getElementById("app")
 
@@ -28,6 +29,7 @@ m.route(app, "/Splash", {
     "/Splash": Splash,
     "/AddUser": AddUser,
     "/Profile": Profile,
+    "/MockImage": MockImage,
     "/MockLoginWall": {
         onmatch: function() {
             //DO NOT DO THAT, LOCALSTORAGE IS INSECURE

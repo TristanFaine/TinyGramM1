@@ -15,6 +15,7 @@
         <button id="sign-in-or-out-button">Sign In/Authorize</button>
         <button id="revoke-access-button" style="display: none">Revoke Access</button>
         <button id="profile-access-button" style="display: none">View profile</button>
+        <button id="image-post-access-button" style="display: none">Try posting an image</button>
     </div>
     <hr>
     <div id="auth-status" style="display: inline; padding-left: 25px"></div><hr>
@@ -30,10 +31,8 @@
     //Voir ceci pour l'auth en back java^
 
     var GoogleAuth //Google Auth object.
-
     //TODO: find a way to not get the "basic" info, aka name, email, etc, we don't really care about these, we just want a login solution
     var SCOPE = 'openid';
-
 
     function handleClientLoad() {
         // Load the API client and auth2 library
@@ -63,6 +62,10 @@
             document.getElementById("profile-access-button").addEventListener('click', function() {
                 showProfile();
             }, false);
+            document.getElementById("image-post-access-button").addEventListener('click', function() {
+                showMockImage();
+            }, false);
+            
         })
     }
 
@@ -78,13 +81,21 @@
         GoogleAuth.disconnect();
     }
 
+    //TODO: define these "X" route names as vars so i don't have to retype them
+    //perfectly every time.
     function routeSelect(route) {
         switch(route) {
-            case '/splash':
+            case "/splash":
                 showHome();
+                break;
+            case "/AddUser":
+                showMockImage();
                 break;
             case '/Profile':
                 showProfile();
+                break;
+            case '/MockImage':
+                showMockImage();
                 break;
             default:
                 showHome();
@@ -96,9 +107,13 @@
         m.route.set("/Splash")
     }
 
+    function showUserInsertion() {
+        m.route.set("/AddUser")
+    }
+
     function showProfile() {
         //TODO :faire un appel API ici, et renvoyer juste ce qui est nécessaire dans un Array je suppose
-        //CECI N'INCLUS DONC PAS LE TOKEN!!!!!
+        //CECI N'INCLUS DONC PAS LE TOKEN!!!!! car ça passe par l'URL
         if (GoogleAuth.currentUser.get().hasGrantedScopes(SCOPE)) {
             var a = GoogleAuth.currentUser.get().getBasicProfile().getName();
             var b = GoogleAuth.currentUser.get().getBasicProfile().getImageUrl();
@@ -106,6 +121,13 @@
             var d = GoogleAuth.currentUser.get().hasGrantedScopes(SCOPE);
         }
         m.route.set("/Profile", {userName: a, userImage: b, userToken: c, authStatus: d})
+    }
+
+    function showMockImage() {
+        if (GoogleAuth.currentUser.get().hasGrantedScopes(SCOPE)) {
+            var d = GoogleAuth.currentUser.get().hasGrantedScopes(SCOPE);
+        }
+        m.route.set("/MockImage", { authStatus: d})
     }
 
     var isAuthorized; //unused for now, this doesn't even have a value on init
@@ -120,8 +142,9 @@
         currentApiRequest = requestDetails;
         if (isAuthorized) {
             // Make API request
-            // gapi.client.request(requestDetails)...
-            // ou un truc XHR/API
+            // var gxhrgapi.client.request(requestDetails)...
+            // gxhr.then(onFulfilled, onRejected, context)...
+            // ou un truc XHR ou m.request
 
             // Reset currentApiRequest variable.
             currentApiRequest = {};
@@ -148,11 +171,13 @@
             document.getElementById("sign-in-or-out-button").innerHTML = ("Sign out");
             document.getElementById("revoke-access-button").style.display = "inline-block";
             document.getElementById("profile-access-button").style.display = "inline-block";
+            document.getElementById("image-post-access-button").style.display = "inline-block";
             document.getElementById("auth-status").innerHTML = ("Connecté + permissions accordées");
         } else {
             document.getElementById("sign-in-or-out-button").innerHTML = ("Sign In/Authorize");
             document.getElementById("revoke-access-button").style.display = "none";
             document.getElementById("profile-access-button").style.display = "none";
+            document.getElementById("image-post-access-button").style.display = "none";
             document.getElementById("auth-status").innerHTML = ("Déconnecté, ou permissions non accordées");
         }
         //Quick and dirty routing on signin status change, but it works
@@ -176,9 +201,9 @@ Checklist :
 - Tester avec produit fourni ds cloud platform et/ou postman -- X
 - Pour java : voir ce qu'a fait le prof dans WebAndCloud
 - Pour front-end : : https://developers.google.com/identity/protocols/oauth2/javascript-implicit-flow?hl=en
-- Mettre en place google login (v2) (accés api backend java ET pour front end) -- X
+- Mettre en place google login (v2) (accés api backend java ET pour front end) -- ~ front ok, back (?)
 - Produire les services API correspondant aux tâches listés dans le projet
-(profil de quelqu'un, bouton follow, liste de posts, post un post, like un post) -- X
+(profil de quelqu'un, bouton follow, faire un post, liste de nouveaux posts, post un post, like un post) -- X
 - Faire un feed d'actualité -- X 
 - Faire le frontend -- X
 !-->
@@ -189,7 +214,14 @@ TODO FRONT:
 Afficher liste users datastore
 idem pour liste posts images
 Faut donc aller faire du back d'abord
+Faisons une page pour "poster une image" trouvons une solution pour recup depuis pc utilisateur
+//bon on utilisera cloud storage je pense.
+//https://cloud.google.com/appengine/docs/standard/java11/using-cloud-storage
+//Je viens de remarquer un truc, notre backend utilise java 8 ou 11..?
 
+
+//bon, recup info fichier front js, envoyer requete rest avec le blob,
+//et presto.
 -->
 
 
