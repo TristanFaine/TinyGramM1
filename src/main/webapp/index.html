@@ -2,45 +2,146 @@
 <html lang="en">
 
 <head>
+<<<<<<< HEAD
     <meta charset="UTF-8" />
     <title>WITNESS ME</title>
+=======
+    <meta http-equiv="content-type" content="application/xhtml+xml; charset=UTF-8" />
+    <title>Le TinyGram du futur</title>
+>>>>>>> f347ffb6c7908b041452c3ffd8b971424b668f08
     <script src="https://unpkg.com/mithril/mithril.js"></script>
 </head>
 
+<!-- TODO: rendre cette barre beaucoup plus jolie
+     Je verrais bien un bouton "VIEW PROFILE" en haut à droite-->
 <body>
+    <div class="topnav">
+        <a class="active" href="#Splash">Menu Principal</a>
+        <button id="sign-in-or-out-button">Sign In/Authorize</button>
+        <button id="revoke-access-button" style="display: none">Revoke Access</button>
+        <button id="profile-access-button" style="display: none">View profile</button>
+        <button id="image-post-access-button" style="display: none">Try posting an image</button>
+    </div>
+    <hr>
+    <div id="auth-status" style="display: inline; padding-left: 25px"></div><hr>
+
+    <main id="app"></main>
 </body>
 
 <!-- Trucs API Google login -->
 <script>
     //Si ça bug trop, utiliser la version simplifiée : https://developers.google.com/identity/gsi/web/guides/get-google-api-clientid?hl=en
+<<<<<<< HEAD
     //TODO : figure out how to do a google sign-in just to get the name or email address
     //AKA just for sign-in
+=======
+    //Vu qu'on compte juste utiliser googleUser.getAuthResponse().id_token;
+    //https://developers.google.com/identity/sign-in/web/backend-auth?hl=en
+    //Voir ceci pour l'auth en back java^
+
+    var GoogleAuth //Google Auth object.
+    //TODO: find a way to not get the "basic" info, aka name, email, etc, we don't really care about these, we just want a login solution
+    var SCOPE = 'openid';
+
+>>>>>>> f347ffb6c7908b041452c3ffd8b971424b668f08
     function handleClientLoad() {
         // Load the API client and auth2 library
         gapi.load('client:auth2', initClient);
     }
 
-
-    function initClient() {
-        var GoogleAuth //Google Auth object.
-        console.log("1")
-        console.log(GoogleAuth)
+    function initClient() { 
         gapi.client.init({
             'apiKey': 'AIzaSyDKHegSyxOiV8N-7RyKUfBL5Ks_cgoJEZA',
             'clientId': '852760108989-gqn73cl4kuk3nb5a8mgf38rgace4u3lk.apps.googleusercontent.com',
-            'scope': 'openid'
+            'scope': SCOPE
         }).then(function () {
             GoogleAuth = gapi.auth2.getAuthInstance();
-            console.log("2")
-            console.log(GoogleAuth)
+            console.log("DEBUG: connected to client credential")
             //Listen for sign-in stage changes.
             GoogleAuth.isSignedIn.listen(updateSigninStatus);
+
+            //Handle initial sign-in state
+            setSigninStatus();
+
+            document.getElementById("sign-in-or-out-button").addEventListener('click',function() {
+                handleAuthClick();
+            }, false);
+            document.getElementById("revoke-access-button").addEventListener('click', function() {
+                revokeAccess();
+            }, false);
+            document.getElementById("profile-access-button").addEventListener('click', function() {
+                showProfile();
+            }, false);
+            document.getElementById("image-post-access-button").addEventListener('click', function() {
+                showMockImage();
+            }, false);
+            
         })
     }
 
-    var isAuthorized;
-    var currentApiRequest;
+    function handleAuthClick() {
+        if (GoogleAuth.isSignedIn.get()) {
+            GoogleAuth.signOut();
+        } else {
+            GoogleAuth.signIn();
+        }
+    }
 
+    function revokeAccess() {
+        GoogleAuth.disconnect();
+    }
+
+    //TODO: define these "X" route names as vars so i don't have to retype them
+    //perfectly every time.
+    function routeSelect(route) {
+        switch(route) {
+            case "/splash":
+                showHome();
+                break;
+            case "/AddUser":
+                showMockImage();
+                break;
+            case '/Profile':
+                showProfile();
+                break;
+            case '/MockImage':
+                showMockImage();
+                break;
+            default:
+                showHome();
+                break;
+        }
+    }
+
+    function showHome() {
+        m.route.set("/Splash")
+    }
+
+    function showUserInsertion() {
+        m.route.set("/AddUser")
+    }
+
+    function showProfile() {
+        //TODO :faire un appel API ici, et renvoyer juste ce qui est nécessaire dans un Array je suppose
+        //CECI N'INCLUS DONC PAS LE TOKEN!!!!! car ça passe par l'URL
+        if (GoogleAuth.currentUser.get().hasGrantedScopes(SCOPE)) {
+            var a = GoogleAuth.currentUser.get().getBasicProfile().getName();
+            var b = GoogleAuth.currentUser.get().getBasicProfile().getImageUrl();
+            var c = GoogleAuth.currentUser.get().getAuthResponse().id_token;
+            var d = GoogleAuth.currentUser.get().hasGrantedScopes(SCOPE);
+        }
+        m.route.set("/Profile", {userName: a, userImage: b, userToken: c, authStatus: d})
+    }
+
+    function showMockImage() {
+        if (GoogleAuth.currentUser.get().hasGrantedScopes(SCOPE)) {
+            var d = GoogleAuth.currentUser.get().hasGrantedScopes(SCOPE);
+        }
+        m.route.set("/MockImage", { authStatus: d})
+    }
+
+    var isAuthorized; //unused for now, this doesn't even have a value on init
+    var currentApiRequest; //unused for now
     /**
      * Store the request details. Then check to determine whether the user
      * has authorized the application.
@@ -51,7 +152,9 @@
         currentApiRequest = requestDetails;
         if (isAuthorized) {
             // Make API request
-            // gapi.client.request(requestDetails)
+            // var gxhrgapi.client.request(requestDetails)...
+            // gxhr.then(onFulfilled, onRejected, context)...
+            // ou un truc XHR ou m.request
 
             // Reset currentApiRequest variable.
             currentApiRequest = {};
@@ -65,16 +168,12 @@
      * variable is set, then the user was prompted to authorize the application
      * before the request executed. In that case, proceed with that API request.
      */
+    //AKA : this is called after GoogleAuth.signIn, no matter what.
+    //Note: don't bother doing a GoogleAuth.signIn.then()... The timing of the resolved Promise is incorrect
     function updateSigninStatus(isSignedIn) {
-        if (isSignedIn) {
-            isAuthorized = true;
-            if (currentApiRequest) {
-                sendAuthorizedApiRequest(currentApiRequest);
-            }
-        } else {
-            isAuthorized = false;
-        }
+        setSigninStatus();
     }
+<<<<<<< HEAD
 </script>
 
 
@@ -163,9 +262,30 @@
                 m("div", {
                     id: "content"
                 }, "what the fuck")
+=======
+
+    function setSigninStatus() {
+        var user = GoogleAuth.currentUser.get();
+        var isAuthorized = user.hasGrantedScopes(SCOPE);
+        if (isAuthorized) {
+            document.getElementById("sign-in-or-out-button").innerHTML = ("Sign out");
+            document.getElementById("revoke-access-button").style.display = "inline-block";
+            document.getElementById("profile-access-button").style.display = "inline-block";
+            document.getElementById("image-post-access-button").style.display = "inline-block";
+            document.getElementById("auth-status").innerHTML = ("Connecté + permissions accordées");
+        } else {
+            document.getElementById("sign-in-or-out-button").innerHTML = ("Sign In/Authorize");
+            document.getElementById("revoke-access-button").style.display = "none";
+            document.getElementById("profile-access-button").style.display = "none";
+            document.getElementById("image-post-access-button").style.display = "none";
+            document.getElementById("auth-status").innerHTML = ("Déconnecté, ou permissions non accordées");
+>>>>>>> f347ffb6c7908b041452c3ffd8b971424b668f08
         }
+        //Quick and dirty routing on signin status change, but it works
+        routeSelect(m.route.get().split('?')[0]);
     }
 
+<<<<<<< HEAD
 
     var MockProfile = {
         //TODO :call some random API using GoogleAuth
@@ -177,7 +297,11 @@
         "/AddUser": AddUser,
         "/MockLogin": MockLogin
     })
+=======
+>>>>>>> f347ffb6c7908b041452c3ffd8b971424b668f08
 </script>
+
+<script type="module" src="controller/routing.js"></script>
 
 <script async defer src="https://apis.google.com/js/api.js" onload="this.onload=function(){};handleClientLoad()"
         onreadystatechange="if (this.readyState === 'complete') this.onload()">
@@ -192,11 +316,30 @@ Checklist :
 - Tester avec produit fourni ds cloud platform et/ou postman -- X
 - Pour java : voir ce qu'a fait le prof dans WebAndCloud
 - Pour front-end : : https://developers.google.com/identity/protocols/oauth2/javascript-implicit-flow?hl=en
-- Mettre en place google login (v2) (accés api backend java ET pour front end) -- X
+- Mettre en place google login (v2) (accés api backend java ET pour front end) -- ~ front ok, back (?)
 - Produire les services API correspondant aux tâches listés dans le projet
-(profil de quelqu'un, bouton follow, liste de posts, post un post, like un post) -- X
+(profil de quelqu'un, bouton follow, faire un post, liste de nouveaux posts, post un post, like un post) -- X
 - Faire un feed d'actualité -- X 
 - Faire le frontend -- X
 !-->
+
+
+<!--
+TODO FRONT:
+Afficher liste users datastore
+idem pour liste posts images
+Faut donc aller faire du back d'abord
+Faisons une page pour "poster une image" trouvons une solution pour recup depuis pc utilisateur
+//bon on utilisera cloud storage je pense.
+//https://cloud.google.com/appengine/docs/standard/java11/using-cloud-storage
+//Je viens de remarquer un truc, notre backend utilise java 8 ou 11..?
+
+
+//bon, recup info fichier front js, envoyer requete rest avec le blob,
+//et presto.
+-->
+
+
+
 
 </html>
