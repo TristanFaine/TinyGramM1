@@ -2,13 +2,14 @@
 <html lang="en">
 
 <head>
-    <meta http-equiv="content-type" content="application/xhtml+xml; charset=UTF-8" />
+    <meta charset="UTF-8" />
     <title>Le TinyGram du futur</title>
     <script src="https://unpkg.com/mithril/mithril.js"></script>
 </head>
 
 <!-- TODO: rendre cette barre beaucoup plus jolie
      Je verrais bien un bouton "VIEW PROFILE" en haut à droite-->
+
 <body>
     <div class="topnav">
         <a class="active" href="#Splash">Menu Principal</a>
@@ -18,7 +19,8 @@
         <button id="image-post-access-button" style="display: none">Try posting an image</button>
     </div>
     <hr>
-    <div id="auth-status" style="display: inline; padding-left: 25px"></div><hr>
+    <div id="auth-status" style="display: inline; padding-left: 25px"></div>
+    <hr>
 
     <main id="app"></main>
 </body>
@@ -39,7 +41,7 @@
         gapi.load('client:auth2', initClient);
     }
 
-    function initClient() { 
+    function initClient() {
         gapi.client.init({
             'apiKey': 'AIzaSyDKHegSyxOiV8N-7RyKUfBL5Ks_cgoJEZA',
             'clientId': '852760108989-gqn73cl4kuk3nb5a8mgf38rgace4u3lk.apps.googleusercontent.com',
@@ -53,19 +55,19 @@
             //Handle initial sign-in state
             setSigninStatus();
 
-            document.getElementById("sign-in-or-out-button").addEventListener('click',function() {
+            document.getElementById("sign-in-or-out-button").addEventListener('click', function () {
                 handleAuthClick();
             }, false);
-            document.getElementById("revoke-access-button").addEventListener('click', function() {
+            document.getElementById("revoke-access-button").addEventListener('click', function () {
                 revokeAccess();
             }, false);
-            document.getElementById("profile-access-button").addEventListener('click', function() {
+            document.getElementById("profile-access-button").addEventListener('click', function () {
                 showProfile();
             }, false);
-            document.getElementById("image-post-access-button").addEventListener('click', function() {
+            document.getElementById("image-post-access-button").addEventListener('click', function () {
                 showMockImage();
             }, false);
-            
+
         })
     }
 
@@ -84,7 +86,7 @@
     //TODO: define these "X" route names as vars so i don't have to retype them
     //perfectly every time.
     function routeSelect(route) {
-        switch(route) {
+        switch (route) {
             case "/splash":
                 showHome();
                 break;
@@ -120,14 +122,21 @@
             var c = GoogleAuth.currentUser.get().getAuthResponse().id_token;
             var d = GoogleAuth.currentUser.get().hasGrantedScopes(SCOPE);
         }
-        m.route.set("/Profile", {userName: a, userImage: b, userToken: c, authStatus: d})
+        m.route.set("/Profile", {
+            userName: a,
+            userImage: b,
+            userToken: c,
+            authStatus: d
+        })
     }
 
     function showMockImage() {
         if (GoogleAuth.currentUser.get().hasGrantedScopes(SCOPE)) {
             var d = GoogleAuth.currentUser.get().hasGrantedScopes(SCOPE);
         }
-        m.route.set("/MockImage", { authStatus: d})
+        m.route.set("/MockImage", {
+            authStatus: d
+        })
     }
 
     var isAuthorized; //unused for now, this doesn't even have a value on init
@@ -183,7 +192,6 @@
         //Quick and dirty routing on signin status change, but it works
         routeSelect(m.route.get().split('?')[0]);
     }
-
 </script>
 
 <script type="module" src="controller/routing.js"></script>
