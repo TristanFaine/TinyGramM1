@@ -2,13 +2,8 @@
 <html lang="en">
 
 <head>
-<<<<<<< HEAD
-    <meta charset="UTF-8" />
-    <title>WITNESS ME</title>
-=======
     <meta http-equiv="content-type" content="application/xhtml+xml; charset=UTF-8" />
     <title>Le TinyGram du futur</title>
->>>>>>> f347ffb6c7908b041452c3ffd8b971424b668f08
     <script src="https://unpkg.com/mithril/mithril.js"></script>
 </head>
 
@@ -31,10 +26,6 @@
 <!-- Trucs API Google login -->
 <script>
     //Si ça bug trop, utiliser la version simplifiée : https://developers.google.com/identity/gsi/web/guides/get-google-api-clientid?hl=en
-<<<<<<< HEAD
-    //TODO : figure out how to do a google sign-in just to get the name or email address
-    //AKA just for sign-in
-=======
     //Vu qu'on compte juste utiliser googleUser.getAuthResponse().id_token;
     //https://developers.google.com/identity/sign-in/web/backend-auth?hl=en
     //Voir ceci pour l'auth en back java^
@@ -43,7 +34,6 @@
     //TODO: find a way to not get the "basic" info, aka name, email, etc, we don't really care about these, we just want a login solution
     var SCOPE = 'openid';
 
->>>>>>> f347ffb6c7908b041452c3ffd8b971424b668f08
     function handleClientLoad() {
         // Load the API client and auth2 library
         gapi.load('client:auth2', initClient);
@@ -173,96 +163,6 @@
     function updateSigninStatus(isSignedIn) {
         setSigninStatus();
     }
-<<<<<<< HEAD
-</script>
-
-
-<!-- Routage-->
-<script>
-    var Splash = {
-        view: function () {
-            return m("main", [
-                m("h1", {
-                    class: "title"
-                }, "Tinygram"),
-                m("div", [
-                    m("a", {
-                        href: "#!/AddUser"
-                    }, "Ajouter un utilisateur"),
-                    m("a", {
-                        href: "#!/MockLogin"
-                    }, "Tentative de connexion Google"),
-                    m("a", {
-                            href: "#!/MockProfile"
-                        },
-                        "Affichage infos Google (TODO : mettre ça autre part genre une notification 'vous etes connectés'"
-                        )
-                ])
-            ])
-        }
-    }
-    // Probleme, require n'est pas possible sur du js client... On réflichira plus tard sur comment implémenter des vues.
-    //var AddUser = require("./views/AddUser")
-
-    var AddUser = {
-        view: function () {
-            return m("main", [
-                m("h1", {
-                    class: "title"
-                }, "Tinygram"),
-                m("form", {
-                    id: "inscription",
-                    onsubmit: e => {
-                        e.preventDefault()
-                        m.request({
-                            method: 'POST',
-                            url: '/addPpl',
-                            params: {
-                                id: document.getElementById('id').value
-                            }
-                        }).then(data => {
-                            m.render(document.getElementById("reponse"),
-                                `Vous êtes enregistré avec l’adresse ${data}`)
-                        })
-                    }
-                }, [
-                    m("h2", {
-                        class: "formtitle"
-                    }, "S'inscrire"),
-                    m("label", {
-                        for: "id"
-                    }, "Adresse"),
-                    m("input", {
-                        id: "id",
-                        type: "text",
-                        name: "id",
-                        value: ""
-                    }),
-                    m("input", {
-                        type: "submit",
-                        name: "C'est parti",
-                    })
-                ]),
-                m("div", {
-                    id: "reponse"
-                }, "Pas encore de reponse...")
-            ])
-        }
-    }
-
-
-    //TODO: faire 2 boutons connex/deconnex
-    var MockLogin = {
-        view: function () {
-            return m("main", [
-                    m("p", {
-                        class: "title"
-                    }, "Ouah deux boutons")
-                ]),
-                m("div", {
-                    id: "content"
-                }, "what the fuck")
-=======
 
     function setSigninStatus() {
         var user = GoogleAuth.currentUser.get();
@@ -279,26 +179,11 @@
             document.getElementById("profile-access-button").style.display = "none";
             document.getElementById("image-post-access-button").style.display = "none";
             document.getElementById("auth-status").innerHTML = ("Déconnecté, ou permissions non accordées");
->>>>>>> f347ffb6c7908b041452c3ffd8b971424b668f08
         }
         //Quick and dirty routing on signin status change, but it works
         routeSelect(m.route.get().split('?')[0]);
     }
 
-<<<<<<< HEAD
-
-    var MockProfile = {
-        //TODO :call some random API using GoogleAuth
-
-    }
-
-    m.route(document.body, "/splash", {
-        "/splash": Splash,
-        "/AddUser": AddUser,
-        "/MockLogin": MockLogin
-    })
-=======
->>>>>>> f347ffb6c7908b041452c3ffd8b971424b668f08
 </script>
 
 <script type="module" src="controller/routing.js"></script>
