@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+<html lang="en">
 
 <head>
-    <meta http-equiv="content-type" content="application/xhtml+xml; charset=UTF-8" />
+    <meta charset="UTF-8" />
     <title>WITNESS ME</title>
     <script src="https://unpkg.com/mithril/mithril.js"></script>
 </head>
@@ -12,8 +12,6 @@
 
 <!-- Trucs API Google login -->
 <script>
-
-
     //Si ça bug trop, utiliser la version simplifiée : https://developers.google.com/identity/gsi/web/guides/get-google-api-clientid?hl=en
     //TODO : figure out how to do a google sign-in just to get the name or email address
     //AKA just for sign-in
@@ -77,7 +75,6 @@
             isAuthorized = false;
         }
     }
-
 </script>
 
 
@@ -97,8 +94,10 @@
                         href: "#!/MockLogin"
                     }, "Tentative de connexion Google"),
                     m("a", {
-                        href: "#!/MockProfile"
-                    }, "Affichage infos Google (TODO : mettre ça autre part genre une notification 'vous etes connectés'")
+                            href: "#!/MockProfile"
+                        },
+                        "Affichage infos Google (TODO : mettre ça autre part genre une notification 'vous etes connectés'"
+                        )
                 ])
             ])
         }
@@ -113,7 +112,8 @@
                     class: "title"
                 }, "Tinygram"),
                 m("form", {
-                    id: "inscription", onsubmit: e => {
+                    id: "inscription",
+                    onsubmit: e => {
                         e.preventDefault()
                         m.request({
                             method: 'POST',
@@ -156,13 +156,13 @@
     var MockLogin = {
         view: function () {
             return m("main", [
-                m("p", {
-                    class: "title"
-                }, "Ouah deux boutons")
-            ]),
-            m("div", {
-                id: "content"
-            }, "what the fuck")
+                    m("p", {
+                        class: "title"
+                    }, "Ouah deux boutons")
+                ]),
+                m("div", {
+                    id: "content"
+                }, "what the fuck")
         }
     }
 
@@ -177,13 +177,11 @@
         "/AddUser": AddUser,
         "/MockLogin": MockLogin
     })
-
-
 </script>
 
 <script async defer src="https://apis.google.com/js/api.js" onload="this.onload=function(){};handleClientLoad()"
-    onreadystatechange="if (this.readyState === 'complete') this.onload()">
-    </script>
+        onreadystatechange="if (this.readyState === 'complete') this.onload()">
+</script>
 
 <!---
 Checklist :
