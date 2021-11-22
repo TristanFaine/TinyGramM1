@@ -5,19 +5,21 @@
     <meta charset="UTF-8" />
     <title>Le TinyGram du futur</title>
     <script src="https://unpkg.com/mithril/mithril.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="style.css">
 </head>
 
 <!-- TODO: rendre cette barre beaucoup plus jolie
      Je verrais bien un bouton "VIEW PROFILE" en haut à droite-->
 
 <body>
-    <div class="topnav">
+    <nav class="topnav">
         <a class="active" href="#Splash">Menu Principal</a>
         <button id="sign-in-or-out-button">Sign In/Authorize</button>
         <button id="revoke-access-button" style="display: none">Revoke Access</button>
-        <button id="profile-access-button" style="display: none">View profile</button>
         <button id="image-post-access-button" style="display: none">Try posting an image</button>
-    </div>
+        <button id="profile-access-button" class="" style="display: none">View profile</button>
+    </nav>
     <hr>
     <div id="auth-status" style="display: inline; padding-left: 25px"></div>
     <hr>
