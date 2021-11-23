@@ -1,3 +1,6 @@
+//TODO: au lieu d'un seul input pour l'image, faire un form enctype="multipart/form-data"
+//pour envoyer un petit message en plus de l'image :)
+//changer donc l'event listener en conséquence.
 function readFile() {
     if(this.files && this.files[0]) {
         var FR = new FileReader();
@@ -5,43 +8,36 @@ function readFile() {
             console.log(e.target.result);
             document.getElementById("imagePreview").src = e.target.result;
             document.getElementById("imageB64Preview").innerHTML = e.target.result;
-            //TODO: faire requete api ici, ou depuis controlleur avec notre truc blob
-            //en verifiant que celui-ci est valide evidemment...
-            //apparament l'API FormData est approprié
-            // https://developer.mozilla.org/en-US/docs/Web/API/FormData
-            //ah bah fallait juste lire la doc mithril https://mithril.js.org/request.html section file uploads
+            //TODO: faire requete api ici https://mithril.js.org/request.html section file uploads
 
-            /*
+            //utiliser la fonction prédéfinie sendAuthorizedApiRequest(requestDetails)? peut-être
+            //c'est juste un ifauthorized => do thing, else force sign in, then retry
+            //https://developer.mozilla.org/fr/docs/Web/HTTP/Headers/Authorization
+            //https://developers.google.com/api-client-library/java/google-api-java-client/oauth2
+            //https://stackoverflow.com/questions/2422468/how-can-i-upload-files-to-a-server-using-jsp-servlet/2424824#2424824
+
+            //TODO: Check if data is actually an image before sending...
+            //maybe restrict input to .jpg and/or .png
             var fd = new FormData();
-            fd.append("userImage", e.target.result)
+            fd.append("userImage", e.target.result);
 
-            //TODO:
-            //create blob -> send blob -> read blob -> put things in datastore | cloud storage
-            //but yeah since we need the id token we're gonna have to either find a way to view
-            //the user object from here, or do the function from the controller.
-            //or just pass the token as a ... wait no that's not a good idea
-            //using the sendAuthorizedApiRequest implies being able to read the gauth token thing i suppose
-            
-
-            //this can read SCOPE so it should (probably) be able to read Googleauth...
-            
-            //values in blob :
-            // l'image
-            // le id.token de la personne
-            // autres infos
-
-            //un truc du genre Blob {type "x", size: x, slice: function}
-            //Puis poster ce blob vers servlet (temporaire)
-            //et voir si ça passe
+            //https://developers.google.com/identity/protocols/oauth2?hl=en#4.-send-the-access-token-to-an-api.
             m.request({
                 method: "POST",
                 url: '/sendImage',
                 headers: {
-
+                    "Content-Type": "multipart/form-data",
+                    "Authorization": "Bearer " + GoogleAuth.currentUser.get().getAuthResponse().id_token
+                },
+                params: {
+                    description: "coucou je suis une val test"
                 },
                 body: fd
+            }).then(data => {
+                m.render(document.getElementById("reponse"),
+                    `Vous avez donné le paramétre ${data}`)
             })
-            */
+
         });
     FR.readAsDataURL(this.files[0]);
     }
@@ -74,6 +70,9 @@ var MockImage = {
                 m("p", {
                     id: "imageB64Preview",
                 },"Rien ici pour l'instant"),
+                m("p", {
+                    id: "reponse",
+                },"pogU?"),
                 
             ]))
         }
