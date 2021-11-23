@@ -1,10 +1,38 @@
 body {
-    font-family: Arial, Helvetica, sans-serif;
-    margin: 0;
+  font-family: Arial, Helvetica, sans-serif;
+  margin: 0;
+  --couleur-lien: #0095f6;
 }
 
 .topnav {
-    padding: 1ex;
-    z-index: 1;
-    box-shadow: 0px 1px 5px;
+  padding: 1ex;
+  z-index: 1;
+  box-shadow: 0px 1px 5px;
+}
+
+button,
+input[type="submit"],
+a {
+  color: var(--couleur-lien);
+}
+
+button:focus,
+button:hover,
+input[type="submit"]:focus,
+input[type="submit"]:hover,
+a:focus,
+a:hover {
+  opacity: 0.7;
+}
+
+button,
+input[type="submit"] {
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+
+a:focus,
+a:hover {
+    text-decoration: none;
 }
