@@ -32,6 +32,6 @@ public class AddPpl extends HttpServlet {
         DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
         datastore.put(moi);
 
-        response.getWriter().print("\"" + id + "\""); 
+        response.getWriter().print("\"" + id + "\"");
     }
 }

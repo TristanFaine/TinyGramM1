@@ -5,23 +5,17 @@
   <sessions-enabled>true</sessions-enabled>
   <runtime>java8</runtime>
 
-   <static-files>
-    <include path="/**.html" >
-    </include>
-    <include path="/**.js" >
-    </include>
-    <include path="/favicon.ico">
-    </include>
-    
+  <static-files>
+    <include path="/**"></include>
   </static-files>
   <system-properties>
-    <property name="java.util.logging.config.file" value="WEB-INF/logging.properties"/>
+    <property name="java.util.logging.config.file" value="WEB-INF/logging.properties" />
   </system-properties>
-<!-- [START env_variables] -->
-    <env-variables>
-<!--         <env-var name="ENDPOINTS_SERVICE_NAME" value="${endpoints.project.id}.appspot.com" /> -->
-        <env-var name="ENDPOINTS_SERVICE_NAME" value="projet-tinygram-tf.appspot.com" />
+  <!-- [START env_variables] -->
+  <env-variables>
+    <!--         <env-var name="ENDPOINTS_SERVICE_NAME" value="${endpoints.project.id}.appspot.com" /> -->
+    <env-var name="ENDPOINTS_SERVICE_NAME" value="projet-tinygram-tf.appspot.com" />
 
-    </env-variables>
-    <!-- [END env_variables] -->
+  </env-variables>
+  <!-- [END env_variables] -->
 </appengine-web-app>
