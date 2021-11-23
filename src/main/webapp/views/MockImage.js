@@ -1,3 +1,6 @@
+//TODO: au lieu d'un seul input pour l'image, faire un form enctype="multipart/form-data"
+//pour envoyer un petit message en plus de l'image :)
+//changer donc l'event listener en conséquence.
 function readFile() {
     if(this.files && this.files[0]) {
         var FR = new FileReader();
@@ -11,8 +14,6 @@ function readFile() {
             //https://developer.mozilla.org/fr/docs/Web/HTTP/Headers/Authorization
             //https://developers.google.com/api-client-library/java/google-api-java-client/oauth2
             //https://stackoverflow.com/questions/2422468/how-can-i-upload-files-to-a-server-using-jsp-servlet/2424824#2424824
-
-            //Je rappelle que notre servlet est 2.5 < 3.0
 
             //TODO: Check if data is actually an image before sending...
             //maybe restrict input to .jpg and/or .png
@@ -76,3 +77,4 @@ var MockImage = {
     }
 }
 export default MockImage;
+                

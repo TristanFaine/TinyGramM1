@@ -6,9 +6,7 @@
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.Paths;
 import java.util.List;
-import java.util.Objects;
 
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.ServletException;
@@ -16,7 +14,6 @@ import javax.servlet.annotation.MultipartConfig;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
 import com.google.appengine.api.datastore.DatastoreService;
 import com.google.appengine.api.datastore.DatastoreServiceFactory;
 import com.google.appengine.api.datastore.Entity;
@@ -30,9 +27,6 @@ import org.apache.commons.fileupload.FileItem;
 import org.apache.commons.fileupload.FileUploadException;
 import org.apache.commons.fileupload.disk.DiskFileItemFactory;
 import org.apache.commons.fileupload.servlet.ServletFileUpload;
-import org.apache.commons.io.FilenameUtils;
-
-import java.nio.file.Files;
 
 
 @WebServlet(name = "Send image", urlPatterns = { "/sendImage" })
@@ -93,12 +87,10 @@ public class SendImage extends HttpServlet {
         */
 
         /* Tests :
-            -- 1 : Can it read the token in bearer header ? 
-            -- 2 : Can it read the parameter "description" ?
-            -- 3 : Can it read the file content, and send it again I guess
-            -- 4 : Can it connect properly to the datastore to do stuff
-
-
+            -- 1 : Peut-il obtenir le token via header Authorization? V
+            -- 2 : Peut-il lire correctement le body/contenu? V (j'ai pas vérifié InputStream par contre)
+            -- 3 : Peut-il utiliser les credentials Google correctement? ?
+            -- 4 : Peut-il se connecter datastore/cloud storage pour utiliser bucket? ?
         */
 
         //Exporting to a bucket (remember to setup auth first) 
