@@ -3,24 +3,25 @@
 }
 
 html {
-    background-color: #fafafa;
+  background-color: #fafafa;
+  --couleur-fond: #fff;
+  --couleur-texte: #000;
 }
 
 body {
   font-family: Arial, Helvetica, sans-serif;
-  margin: 0;
-  --couleur-fond: #fff;
-  --couleur-texte: #000;
-  background-color: var(--couleur-fond);
   color: var(--couleur-texte);
   max-width: 768px;
   margin: auto;
-  box-shadow: 0 1px 5px #777;
+  min-height: 100vh;
   overflow-wrap: break-word;
 }
 
 body > * {
   padding: 1ex;
+  background-color: var(--couleur-fond);
+  border: 1px solid #dbdbdb;
+  margin: 1em 0;
 }
 
 .topnav {
@@ -32,7 +33,6 @@ body > * {
   align-items: center;
   flex-wrap: wrap;
   gap: 1ex;
-  box-shadow: 0px 1px 5px #777;
 }
 
 button,
