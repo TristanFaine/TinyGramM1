@@ -1,8 +1,8 @@
 //TODO: replace these var by class equivalents?
 var Profile = {
-    view: function(vnode) {
-        if (vnode.attrs.authStatus === undefined || !vnode.attrs.authStatus ) {
-            return(m("div", [
+    view: function (vnode) {
+        if (vnode.attrs.authStatus === undefined || !vnode.attrs.authStatus) {
+            return (m("div", [
                 m("h1", {
                     id: "profileHeader"
                 }, "In memoriam : Groquik"),
@@ -18,10 +18,10 @@ var Profile = {
                     alt: "Repose en paix, Groquik"
                 })
             ]))
-            
+
         }
         else {
-            return(m("div", [
+            return (m("div", [
                 m("h1", {
                     id: "profileHeader"
                 }, "Déconnectez-vous pour une surprise"),

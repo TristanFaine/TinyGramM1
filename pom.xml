@@ -97,20 +97,42 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-    <groupId>com.google.api-client</groupId>
-    <artifactId>google-api-client-appengine</artifactId>
-    <version>1.32.1</version>
+      <groupId>com.google.api-client</groupId>
+      <artifactId>google-api-client-appengine</artifactId>
+      <version>1.32.1</version>
     </dependency>
     <dependency>
-    <groupId>com.google.cloud</groupId>
-    <artifactId>google-cloud-storage</artifactId>
-  </dependency>
-  <!-- https://mvnrepository.com/artifact/commons-fileupload/commons-fileupload -->
-<dependency>
-    <groupId>commons-fileupload</groupId>
-    <artifactId>commons-fileupload</artifactId>
-    <version>1.4</version>
-</dependency>
+      <groupId>com.google.cloud</groupId>
+      <artifactId>google-cloud-storage</artifactId>
+    </dependency>
+    <!-- https://mvnrepository.com/artifact/commons-fileupload/commons-fileupload -->
+    <dependency>
+      <groupId>commons-fileupload</groupId>
+      <artifactId>commons-fileupload</artifactId>
+      <version>1.4</version>
+    </dependency>
+
+    <!-- OAuth stuff -->
+    <dependency>
+      <groupId>com.google.oauth-client</groupId>
+      <artifactId>google-oauth-client</artifactId>
+      <version>1.30.4</version>
+    </dependency>
+    <!-- For servlet -->
+    <dependency>
+      <groupId>com.google.oauth-client</groupId>
+      <artifactId>google-oauth-client-servlet</artifactId>
+      <version>1.30.4</version>
+    </dependency>
+    <!-- For App Engine -->
+    <dependency>
+      <groupId>com.google.oauth-client</groupId>
+      <artifactId>google-oauth-client-appengine</artifactId>
+      <version>1.30.4</version>
+    </dependency>
+
+
+
 
 
     

@@ -28,7 +28,7 @@ var Splash = {
 
 import Profile from "/../views/Profile.js";
 import AddUser from "/../views/AddUser.js";
-import MockImage from "/../views/MockImage.js";
+import SendImage from "/../views/SendImage.js";
 
 var app = document.getElementById("app");
 
@@ -36,12 +36,21 @@ m.route(app, "/Splash", {
   "/Splash": Splash,
   "/AddUser": AddUser,
   "/Profile": Profile,
-  "/MockImage": MockImage,
+  "/SendImage": SendImage,
   "/MockLoginWall": {
     onmatch: function () {
       //DO NOT DO THAT, LOCALSTORAGE IS INSECURE
-      if (!localStorage.getItem("auth-token")) m.route.set("/login");
-      else return Splash;
+      if (!localStorage.getItem("auth-token")) m.route.set("/Splash");
+      else return AddUser;
+    },
+  }
+  /*
+  "/SendImage": {
+    onmatch: function () {
+      //DO NOT DO THAT, LOCALSTORAGE IS INSECURE
+      if (GoogleAuth.currentUser.get().hasGrantedScopes(SCOPE) === undefined || !GoogleAuth.currentUser.get().hasGrantedScopes(SCOPE)) m.route.set("/Splash");
+      else return SendImage;
     },
   },
+  */
 });

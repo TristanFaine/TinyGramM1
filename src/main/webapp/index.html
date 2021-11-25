@@ -9,16 +9,13 @@
     <link rel="stylesheet" href="style.css">
 </head>
 
-<!-- TODO: rendre cette barre beaucoup plus jolie
-     Je verrais bien un bouton "VIEW PROFILE" en haut à droite-->
-
 <body>
     <nav class="topnav">
         <a class="active" href="#Splash">Menu Principal</a>
-        <button id="sign-in-or-out-button">Sign In/Authorize</button>
-        <button id="revoke-access-button" style="display: none">Revoke Access</button>
-        <button id="image-post-access-button" style="display: none">Try posting an image</button>
-        <button id="profile-access-button" class="" style="display: none">View profile</button>
+        <button id="sign-in-or-out-button">Connexion/Autorisation</button>
+        <button id="revoke-access-button" style="display: none">Révoquer Accès </button>
+        <button id="image-post-access-button" style="display: none">Poster une image</button>
+        <button id="profile-access-button" class="" style="display: none">Voir profil</button>
     </nav>
     <div id="auth-status"></div>
     <main id="app"></main>
@@ -26,14 +23,9 @@
 
 <!-- Trucs API Google login -->
 <script>
-    //Si ça bug trop, utiliser la version simplifiée : https://developers.google.com/identity/gsi/web/guides/get-google-api-clientid?hl=en
-    //Vu qu'on compte juste utiliser googleUser.getAuthResponse().id_token;
-    //https://developers.google.com/identity/sign-in/web/backend-auth?hl=en
-    //Voir ceci pour l'auth en back java^
-
-    var GoogleAuth //Google Auth object.
-    //TODO: find a way to not get the "basic" info, aka name, email, etc, we don't really care about these, we just want a login solution
-    var SCOPE = 'openid';
+    var GoogleAuth
+    //TODO : En read only pour l'instant, changer si on se sert de cloud storage
+    var SCOPE = 'openid https://www.googleapis.com/auth/cloud-platform.read-only https://www.googleapis.com/auth/devstorage.read_only';
 
     function handleClientLoad() {
         // Load the API client and auth2 library
@@ -42,16 +34,18 @@
 
     function initClient() {
         gapi.client.init({
+            //mettre ça dans le git est une mauvaise idée, les mettre dans un fichier ignoré via gitignore
+
             'apiKey': 'AIzaSyDKHegSyxOiV8N-7RyKUfBL5Ks_cgoJEZA',
             'clientId': '852760108989-gqn73cl4kuk3nb5a8mgf38rgace4u3lk.apps.googleusercontent.com',
             'scope': SCOPE
         }).then(function () {
             GoogleAuth = gapi.auth2.getAuthInstance();
             console.log("DEBUG: connected to client credential")
-            //Listen for sign-in stage changes.
+            //Écoute les changement de connexion
             GoogleAuth.isSignedIn.listen(updateSigninStatus);
 
-            //Handle initial sign-in state
+            //S'occupe de l'état de connexion quand on entre dans l'application
             setSigninStatus();
 
             document.getElementById("sign-in-or-out-button").addEventListener('click', function () {
@@ -64,7 +58,7 @@
                 showProfile();
             }, false);
             document.getElementById("image-post-access-button").addEventListener('click', function () {
-                showMockImage();
+                showSendImage();
             }, false);
 
         })
@@ -84,6 +78,8 @@
 
     //TODO: define these "X" route names as vars so i don't have to retype them
     //perfectly every time.
+    //TODO: définir ces noms de route "/X" dans un fichier config pour qu'on ait pas besoin
+    //de les réécrire parfaitement à chaque fois dans les fichiers divers
     function routeSelect(route) {
         switch (route) {
             case "/splash":
@@ -95,8 +91,8 @@
             case '/Profile':
                 showProfile();
                 break;
-            case '/MockImage':
-                showMockImage();
+            case '/SendImage':
+                showSendImage();
                 break;
             default:
                 showHome();
@@ -115,6 +111,10 @@
     function showProfile() {
         //TODO :faire un appel API ici, et renvoyer juste ce qui est nécessaire dans un Array je suppose
         //CECI N'INCLUS DONC PAS LE TOKEN!!!!! car ça passe par l'URL
+
+        //Note: vu que les composants sont init avant la création de l'objet GoogleAuth,
+        //Il faut être sûr que à l'initialisation, même aprés condition auth / pas auth
+        //qu'il y ait pas d'accés direct à un objet défini ici.
         if (GoogleAuth.currentUser.get().hasGrantedScopes(SCOPE)) {
             var a = GoogleAuth.currentUser.get().getBasicProfile().getName();
             var b = GoogleAuth.currentUser.get().getBasicProfile().getImageUrl();
@@ -129,11 +129,11 @@
         })
     }
 
-    function showMockImage() {
+    function showSendImage() {
         if (GoogleAuth.currentUser.get().hasGrantedScopes(SCOPE)) {
             var d = GoogleAuth.currentUser.get().hasGrantedScopes(SCOPE);
         }
-        m.route.set("/MockImage", {
+        m.route.set("/SendImage", {
             authStatus: d
         })
     }
@@ -176,7 +176,7 @@
         var user = GoogleAuth.currentUser.get();
         var isAuthorized = user.hasGrantedScopes(SCOPE);
         if (isAuthorized) {
-            document.getElementById("sign-in-or-out-button").innerHTML = ("Sign out");
+            document.getElementById("sign-in-or-out-button").innerHTML = ("Déconnexion");
             document.getElementById("revoke-access-button").style.display = "inline-block";
             document.getElementById("profile-access-button").style.display = "inline-block";
             document.getElementById("image-post-access-button").style.display = "inline-block";
@@ -204,34 +204,23 @@ Checklist :
 - Nouveau projet dans GCP -- V
 - Utiliser datastore pour insérer/query -- ~
 - Routage/backend pour naviguer l'UI (voir tuto mithril js) -- ~
-- Produire des services API test (voir docs java v11 https://cloud.google.com/appengine/docs/standard/java11) -- X
+- Produire des services API test (voir docs java v11 https://cloud.google.com/appengine/docs/standard/java11) -- ~
 - Tester avec produit fourni ds cloud platform et/ou postman -- X
-- Pour java : voir ce qu'a fait le prof dans WebAndCloud
-- Pour front-end : : https://developers.google.com/identity/protocols/oauth2/javascript-implicit-flow?hl=en
-- Mettre en place google login (v2) (accés api backend java ET pour front end) -- ~ front ok, back (?)
+- Mettre en place google login (v2) (accés api backend java ET pour front end) -- ~ front ok, back ok(?)
 - Produire les services API correspondant aux tâches listés dans le projet
 (profil de quelqu'un, bouton follow, faire un post, liste de nouveaux posts, post un post, like un post) -- X
 - Faire un feed d'actualité -- X 
-- Faire le frontend -- X
+- Faire le frontend -- ~
+- Faire fichier config caché pour stocker noms url genre "/addUser", et un autre caché pour stocker nos "secrets"
 !-->
-
 
 <!--
 TODO FRONT:
-Afficher liste users datastore
-idem pour liste posts images
-Faut donc aller faire du back d'abord
-Faisons une page pour "poster une image" trouvons une solution pour recup depuis pc utilisateur
-//bon on utilisera cloud storage je pense.
+Afficher liste users datastore, idem liste posts images
+
 //https://cloud.google.com/appengine/docs/standard/java11/using-cloud-storage
 //Je viens de remarquer un truc, notre backend utilise java 8 ou 11..?
-
-
-//bon, recup info fichier front js, envoyer requete rest avec le blob,
-//et presto.
+//Apparament c'est le 8?
 -->
-
-
-
 
 </html>
