@@ -21,6 +21,7 @@ var Profile = {
 
         }
         else {
+            console.log(vnode)
             return (m("div", [
                 m("h1", {
                     id: "profileHeader"

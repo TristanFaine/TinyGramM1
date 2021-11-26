@@ -25,7 +25,8 @@
 <script>
     var GoogleAuth
     //TODO : En read only pour l'instant, changer si on se sert de cloud storage
-    var SCOPE = 'openid https://www.googleapis.com/auth/cloud-platform.read-only https://www.googleapis.com/auth/devstorage.read_only';
+    var SCOPE =
+        'openid https://www.googleapis.com/auth/cloud-platform.read-only https://www.googleapis.com/auth/devstorage.read_only';
 
     function handleClientLoad() {
         // Load the API client and auth2 library
@@ -48,19 +49,10 @@
             //S'occupe de l'état de connexion quand on entre dans l'application
             setSigninStatus();
 
-            document.getElementById("sign-in-or-out-button").addEventListener('click', function () {
-                handleAuthClick();
-            }, false);
-            document.getElementById("revoke-access-button").addEventListener('click', function () {
-                revokeAccess();
-            }, false);
-            document.getElementById("profile-access-button").addEventListener('click', function () {
-                showProfile();
-            }, false);
-            document.getElementById("image-post-access-button").addEventListener('click', function () {
-                showSendImage();
-            }, false);
-
+            document.getElementById("sign-in-or-out-button").addEventListener('click', handleAuthClick, false);
+            document.getElementById("revoke-access-button").addEventListener('click', revokeAccess, false);
+            document.getElementById("profile-access-button").addEventListener('click', showProfile, false);
+            document.getElementById("image-post-access-button").addEventListener('click', showSendImage, false);
         })
     }
 
@@ -68,7 +60,15 @@
         if (GoogleAuth.isSignedIn.get()) {
             GoogleAuth.signOut();
         } else {
-            GoogleAuth.signIn();
+            GoogleAuth.signIn().then((user) => {
+                m.request({
+                    method: 'POST',
+                    url: '/_ah/api/api/v1/addUser',
+                    params: {
+                        id: user.getId()
+                    }
+                }).then(x => console.log(x))
+            });
         }
     }
 
@@ -157,7 +157,7 @@
             // Reset currentApiRequest variable.
             currentApiRequest = {};
         } else {
-            GoogleAuth.signIn();
+            GoogleAuth.signIn()
         }
     }
 
