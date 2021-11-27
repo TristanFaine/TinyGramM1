@@ -9,6 +9,7 @@ function readFile() {
             //Il ne faut PAS spécifier header:content-type, sinon il ne set pas de boundary automatiquement
             //et donc erreur "org.apache.commons.fileupload.FileUploadException: the request was rejected because no multipart boundary was found"
             if (fileType == "png" || fileType == "jpeg") {
+                console.log(e.target.result)
                 m.request({
                     method: 'POST',
                     url: '/_ah/api/api/v1/addImage',
@@ -17,9 +18,8 @@ function readFile() {
                     },
                     params: {
                         description: document.getElementById("description").value,
-                        fileType: fileType
                     },
-                    body: {imageString: e.target.result.split(',')[1]},
+                    body: {imageString: e.target.result}
                 }).then(data => {
                     m.render(document.getElementById("reponse"),
                     //.result est un nom qu'on a donné au paramétre de réponse principale,

@@ -66,7 +66,7 @@ public class Endpoint {
     }
 
     @ApiMethod(name = "addImage", httpMethod = HttpMethod.POST, path = "addImage")
-    public Map<String, String> addImage(HttpServletRequest req, @Named("imageString") String imageString, @Named("description") String description) throws GeneralSecurityException, IOException {
+    public Map<String, String> addImage(HttpServletRequest req, @Named("imageString") String imageString, @Named("description") String description) throws GeneralSecurityException, IOException, Exception {
         DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
         String userToken = req.getHeader("Authorization").substring(7);
    
@@ -78,15 +78,16 @@ public class Endpoint {
                 .build();
 
                 GoogleIdToken idToken = verifier.verify(userToken);
+
                 if (idToken != null) {
                     Payload payload = idToken.getPayload();
                     String userId = payload.getSubject();
 
+                    String[] parts = imageString.split("[,]");
+                    imageString = parts[1];
+
                     byte[] decode = Base64.getDecoder().decode(imageString);
                     InputStream is = new ByteArrayInputStream(decode);
-                    //On suppose qu'on recoit le mimeType a l'interieur du string base64, plutot que d'ajouter un argument fileType dans l'api
-                    //Oui ça fait plus de temps de traitement mais bon.
-                    //Note: Avec ou sans le mimetype il ne devrait pas avoir de soucis dans le decodage.
                     String mimeType = null;
                     String fileExtension = null;
                     try {
@@ -95,7 +96,7 @@ public class Endpoint {
                         String[] tokens = mimeType.split(delimiter);
                         fileExtension = tokens[1];
                     } catch (IOException ioException){
-
+                        throw new Exception("trucs: " + fileExtension,ioException); 
                     }
 
                     //TODO: Définir ces trucs avec les env var de webapp\WEB-INF\appengine-web.xml
