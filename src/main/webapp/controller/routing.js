@@ -23,8 +23,6 @@ var Splash = {
     ]);
   },
 };
-//TODO: ^ manually adding an a href for every new page is a pain. maybe figure something
-//to do it automatically.
 
 import UnknownProfile from "/../views/UnknownProfile.js";
 import Profile from "/../views/Profile.js";
@@ -33,10 +31,6 @@ import SendImage from "/../views/SendImage.js";
 
 
 var app = document.getElementById("app");
-
-//Note: Si on refresh la page, les conditions ne sont pas respectées donc on se tape .. hmm.
-
-
 
 //funnily enough, this should break on load since googleauth is undefined, but i suppose mithril is smart
 m.route(app, "/Splash", {
@@ -56,3 +50,4 @@ m.route(app, "/Splash", {
     },
   },
 });
+

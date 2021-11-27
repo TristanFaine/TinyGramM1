@@ -37,7 +37,7 @@
 
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-    <endpoints.framework.version>2.2.1</endpoints.framework.version>
+    <endpoints.framework.version>2.2.2</endpoints.framework.version>
     <endpoints.management.version>1.0.14</endpoints.management.version>
 
     <checkstyle.skip>true</checkstyle.skip>
@@ -57,14 +57,10 @@
   </dependencies>
 </dependencyManagement>
 
-
+<!-- il dit que ma dependence com.google.api-client est 1.25 pourtant je suis bien en 1.32.1... hmmm  que se passe-t-il...-->
   <dependencies>
-    <!-- Compile/runtime dependencies -->
-    <dependency>
-      <groupId>com.google.endpoints</groupId>
-      <artifactId>endpoints-framework</artifactId>
-      <version>${endpoints.framework.version}</version>
-    </dependency>
+  <!-- Compile/runtime dependencies -->
+    
     <!-- [START api_management] -->
     <dependency>
       <groupId>com.google.endpoints</groupId>
@@ -105,7 +101,6 @@
       <groupId>com.google.cloud</groupId>
       <artifactId>google-cloud-storage</artifactId>
     </dependency>
-    <!-- https://mvnrepository.com/artifact/commons-fileupload/commons-fileupload -->
     <dependency>
       <groupId>commons-fileupload</groupId>
       <artifactId>commons-fileupload</artifactId>
@@ -130,7 +125,12 @@
       <artifactId>google-oauth-client-appengine</artifactId>
       <version>1.30.4</version>
     </dependency>
-
+    <!--- des choses bizarres se produisent si on ne met pas le framework à la fin-->
+  <dependency>
+      <groupId>com.google.endpoints</groupId>
+      <artifactId>endpoints-framework</artifactId>
+      <version>${endpoints.framework.version}</version>
+    </dependency>
 
 
 

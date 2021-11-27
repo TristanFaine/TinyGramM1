@@ -24,7 +24,9 @@
   <env-variables>
     <!--         <env-var name="ENDPOINTS_SERVICE_NAME" value="${endpoints.project.id}.appspot.com" /> -->
     <env-var name="ENDPOINTS_SERVICE_NAME" value="projet-tinygram-tf.appspot.com" />
+    <env-var name="DEFAULT_BUCKET_NAME" value="projet-tinygram-tf.appspot.com" />
 
   </env-variables>
+
   <!-- [END env_variables] -->
 </appengine-web-app>

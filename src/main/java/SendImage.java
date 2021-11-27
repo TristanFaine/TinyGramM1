@@ -1,9 +1,3 @@
-
-/**
- * Need to check credential works, cloud storage access
- * (Apparently a bucket with 5 GB is available by default)
- */
-
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.util.Collections;

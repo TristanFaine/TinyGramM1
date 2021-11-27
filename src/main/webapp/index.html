@@ -21,12 +21,13 @@
     <main id="app"></main>
 </body>
 
+
+<script type="module" src="controller/routing.js"></script>
 <!-- Trucs API Google login -->
 <script>
     var GoogleAuth
-    //TODO : En read only pour l'instant, changer si on se sert de cloud storage
     var SCOPE =
-        'openid https://www.googleapis.com/auth/cloud-platform.read-only https://www.googleapis.com/auth/devstorage.read_only';
+        'openid https://www.googleapis.com/auth/cloud-platform https://www.googleapis.com/auth/devstorage.full_control';
 
     function handleClientLoad() {
         // Load the API client and auth2 library
@@ -35,7 +36,7 @@
 
     function initClient() {
         gapi.client.init({
-            //mettre ça dans le git est une mauvaise idée, les mettre dans un fichier ignoré via gitignore
+            //TODO: recup les vals depuis les env var de webapp\WEB-INF\appengine-web.xml
 
             'apiKey': 'AIzaSyDKHegSyxOiV8N-7RyKUfBL5Ks_cgoJEZA',
             'clientId': '852760108989-gqn73cl4kuk3nb5a8mgf38rgace4u3lk.apps.googleusercontent.com',
@@ -65,10 +66,7 @@
                     method: 'POST',
                     url: '/_ah/api/api/v1/addUser',
                     headers: {
-                    "Authorization": "Bearer " + GoogleAuth.currentUser.get().getAuthResponse().id_token
-                    },
-                    params: {
-                        id: user.getId()
+                        "Authorization": "Bearer " + GoogleAuth.currentUser.get().getAuthResponse().id_token
                     }
                 }).then(x => console.log(x))
             });
@@ -79,8 +77,6 @@
         GoogleAuth.disconnect();
     }
 
-    //TODO: define these "X" route names as vars so i don't have to retype them
-    //perfectly every time.
     //TODO: définir ces noms de route "/X" dans un fichier config pour qu'on ait pas besoin
     //de les réécrire parfaitement à chaque fois dans les fichiers divers
     function routeSelect(route) {
@@ -113,12 +109,8 @@
     }
 
     function showProfile() {
-        //TODO :faire un appel API ici, et renvoyer juste ce qui est nécessaire dans un Array je suppose
-        //CECI N'INCLUS DONC PAS LE TOKEN!!!!! car ça passe par l'URL
-
         //Note: vu que les composants sont init avant la création de l'objet GoogleAuth,
-        //Il faut être sûr que à l'initialisation, même aprés condition auth / pas auth
-        //qu'il y ait pas d'accés direct à un objet défini ici.
+        //Il faut être sûr que à l'initialisation, même aprés condition auth / pas auth qu'il y ait pas d'accés direct à un objet défini ici.
         //Note : techniquement, avec les nouvelles conditions de m.route(...), il n'est plus être nécessaire d'envoyer les paramétres vnode
         if (GoogleAuth.currentUser.get().hasGrantedScopes(SCOPE)) {
             var a = GoogleAuth.currentUser.get().getBasicProfile().getName();
@@ -166,13 +158,6 @@
         }
     }
 
-    /**
-     * Listener called when user completes auth flow. If the currentApiRequest
-     * variable is set, then the user was prompted to authorize the application
-     * before the request executed. In that case, proceed with that API request.
-     */
-    //AKA : this is called after GoogleAuth.signIn, no matter what.
-    //Note: don't bother doing a GoogleAuth.signIn.then()... The timing of the resolved Promise is incorrect
     function updateSigninStatus(isSignedIn) {
         setSigninStatus();
     }
@@ -201,29 +186,24 @@
 
 
 <script async defer src="https://apis.google.com/js/api.js" onload="this.onload=function(){};handleClientLoad()"
-        onreadystatechange="if (this.readyState === 'complete') this.onload()">
-</script>
+    onreadystatechange="if (this.readyState === 'complete') this.onload()">
+    </script>
 
-<script type="module" src="controller/routing.js"></script>
+
 
 <!---
 Checklist :
 - Nouveau projet dans GCP -- V
-- Utiliser datastore pour insérer/query -- ~
-- Routage/backend pour naviguer l'UI (voir tuto mithril js) -- ~
-- Produire des services API test (voir docs java v11 https://cloud.google.com/appengine/docs/standard/java11) -- ~
-- Tester avec produit fourni ds cloud platform et/ou postman -- X
-- Mettre en place google login (v2) (accés api backend java ET pour front end) -- ~ front ok, back ok(?)
+- Utiliser datastore pour insérer/query -- ~ (on a que des user : name pour l'instant)
+- Routage/backend pour naviguer l'UI (voir tuto mithril js) -- ~ (peut-être ok?)
+- Produire des services API test  -- V
+- Tester avec produit fourni ds cloud platform et/ou postman -- ~
+- Mettre en place google login (v2) (accés api backend java ET pour front end) -- V
 - Produire les services API correspondant aux tâches listés dans le projet
 (profil de quelqu'un, bouton follow, faire un post, liste de nouveaux posts, post un post, like un post) -- X
 - Faire un feed d'actualité -- X 
 - Faire le frontend -- ~
-- Faire fichier config caché pour stocker noms url genre "/addUser", et un autre caché pour stocker nos "secrets"
-
-Trucs à faire samedi 27 :
-Mieux organiser les fichiers
-vérifier api fonctionne
-créer des kinds
-faire une timeline
+- Faire fichier config caché pour stocker noms url genre "/addUser", et un autre caché pour stocker nos "secrets" -- X
 -->
+
 </html>

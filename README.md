@@ -9,11 +9,17 @@
 ### Veuillez penser à modifier les paramètres suivants :
 * "projet-tinygram-tf" avec votre ID projet google dans pom.xml
 * "projet-tinygram-tf" avec votre ID projet google dans src/main/webapp/WEB-INF/appengine-web.xml
+* Les <env-variables> dans src\main\webapp\WEB-INF\appengine-web.xml
 
 ## Commandes gcloud (penser à d'abord installer le SDK gcloud : https://cloud.google.com/sdk/install)
 ```
 gcloud init (une seule fois pour configurer l'installation locale du SDK)
 gcloud app create
+```
+
+* Avant execution
+```
+mvn clean install
 ```
 
 * Application en local

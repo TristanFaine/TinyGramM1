@@ -4,50 +4,38 @@ function readFile() {
         var FR = new FileReader();
         FR.addEventListener("load", e => {
             document.getElementById("imagePreview").src = e.target.result;
-            //utiliser la fonction prédéfinie sendAuthorizedApiRequest(requestDetails)?
-            //c'est juste un ifauthorized => do thing, else force sign in, then retry
-            //Docs utile :
-            //https://developer.mozilla.org/fr/docs/Web/HTTP/Headers/Authorization
-            //https://developers.google.com/api-client-library/java/google-api-java-client/oauth2
-            //https://stackoverflow.com/questions/2422468/how-can-i-upload-files-to-a-server-using-jsp-servlet/2424824#2424824
-
-            //TODO: Check if data is actually an image before sending...
-            //maybe restrict input to .jpg and/or .png
-
-            //TODO: Envoyer objet json plutot qu'un formdata 
-
-            var fd = new FormData();
-            fd.append("userImage", e.target.result);
-            fd.append("userName", GoogleAuth.currentUser.get().getBasicProfile().getName());
-            fd.append("description", document.getElementById("description").innerHTML)
+            var fileType = e.target.result.split(',')[0].split('/')[1].split(';')[0];
 
             //Il ne faut PAS spécifier header:content-type, sinon il ne set pas de boundary automatiquement
             //et donc erreur "org.apache.commons.fileupload.FileUploadException: the request was rejected because no multipart boundary was found"
-            m.request({
-                method: "POST",
-                url: '/sendImage',
-                headers: {
-                    "Authorization": "Bearer " + GoogleAuth.currentUser.get().getAuthResponse().id_token
-                },
-                body: fd
-            }).then(data => {
-                m.render(document.getElementById("reponse"),
-                    `Reception de réponse ${data}`);
-                
-                //Note : Si data n'est pas valide pour src, alors notre appli essaye d'utiliser
-                //un do get sur la http://localhost:8080/REPONSE
-                //je n'ai aucune idée si c'est quelque chose que fait js, java, la config, ou autre
-                //Une solution simple est de ne pas insérer autre chose qu'une image.
-                document.getElementById("imagePreviewBack").src = data;
-            })
+            if (fileType == "png" || fileType == "jpeg") {
+                m.request({
+                    method: 'POST',
+                    url: '/_ah/api/api/v1/addImage',
+                    headers: {
+                        "Authorization": "Bearer " + GoogleAuth.currentUser.get().getAuthResponse().id_token
+                    },
+                    params: {
+                        description: document.getElementById("description").value,
+                        fileType: fileType
+                    },
+                    body: {imageString: e.target.result.split(',')[1]},
+                }).then(data => {
+                    m.render(document.getElementById("reponse"),
+                    //.result est un nom qu'on a donné au paramétre de réponse principale,
+                        `Reception de réponse ${data.result}`);
+                    
+                    //Note : On pourrait aussi envoyer le string base64 SANS le prefixe data url, et mettre en parametre supplémentaire, mais bon on va pas le faire.
+                    //est-ce bien, est-ce une mauvaise idée, qui sait.
+                    document.getElementById("imagePreviewBack").src = "data:image/png;base64," + data.result;
+                })
+         } else {
+             document.getElementById("reponse").innerHTML = "Cette application ne prends en compte que les fichiers jpeg ou png."}
 
         });
         FR.readAsDataURL(input.files[0]);
     }
 }
-
-
-
 var SendImage = {
     view: function (vnode) {
         if (vnode.attrs.authStatus === undefined || !vnode.attrs.authStatus) {
@@ -73,13 +61,12 @@ var SendImage = {
                     m("label", {
                         for: "description"
                     }, "Ecris du texte pour la description"),
-                    m("hr"),
                     m("input", {
                         id: "description",
                         type: "text",
                         name: "description",
-                        value: ""
                     }),
+                    m("hr"),
                     m("input", {
                         id: "imageInput",
                         type: "file",
