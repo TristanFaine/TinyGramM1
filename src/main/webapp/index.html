@@ -64,6 +64,9 @@
                 m.request({
                     method: 'POST',
                     url: '/_ah/api/api/v1/addUser',
+                    headers: {
+                    "Authorization": "Bearer " + GoogleAuth.currentUser.get().getAuthResponse().id_token
+                    },
                     params: {
                         id: user.getId()
                     }

@@ -37,7 +37,6 @@ public class SendImage extends HttpServlet {
     @Override
     public void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         try {
-
             //I hope this works with postman or else i might as well just rewrite it completely
             //seems like a lot of spaghetti tbh
             //how would item.isFormField() even work outside a browser?
