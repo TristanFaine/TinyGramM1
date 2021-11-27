@@ -88,6 +88,7 @@
             case "/AddUser":
                 showUserInsertion();
                 break;
+            case "/UnknownProfile":
             case '/Profile':
                 showProfile();
                 break;
@@ -115,18 +116,19 @@
         //Note: vu que les composants sont init avant la création de l'objet GoogleAuth,
         //Il faut être sûr que à l'initialisation, même aprés condition auth / pas auth
         //qu'il y ait pas d'accés direct à un objet défini ici.
+        //Note : techniquement, avec les nouvelles conditions de m.route(...), il n'est plus être nécessaire d'envoyer les paramétres vnode
         if (GoogleAuth.currentUser.get().hasGrantedScopes(SCOPE)) {
             var a = GoogleAuth.currentUser.get().getBasicProfile().getName();
             var b = GoogleAuth.currentUser.get().getBasicProfile().getImageUrl();
             var c = GoogleAuth.currentUser.get().getAuthResponse().id_token;
             var d = GoogleAuth.currentUser.get().hasGrantedScopes(SCOPE);
-        }
-        m.route.set("/Profile", {
-            userName: a,
-            userImage: b,
-            userToken: c,
-            authStatus: d
-        })
+            m.route.set("/Profile", {
+                userName: a,
+                userImage: b,
+                userToken: c,
+                authStatus: d
+            })
+        } else m.route.set("/UnknownProfile")
     }
 
     function showSendImage() {
@@ -193,11 +195,13 @@
     }
 </script>
 
-<script type="module" src="controller/routing.js"></script>
+
 
 <script async defer src="https://apis.google.com/js/api.js" onload="this.onload=function(){};handleClientLoad()"
         onreadystatechange="if (this.readyState === 'complete') this.onload()">
 </script>
+
+<script type="module" src="controller/routing.js"></script>
 
 <!---
 Checklist :
@@ -212,15 +216,11 @@ Checklist :
 - Faire un feed d'actualité -- X 
 - Faire le frontend -- ~
 - Faire fichier config caché pour stocker noms url genre "/addUser", et un autre caché pour stocker nos "secrets"
-!-->
 
-<!--
-TODO FRONT:
-Afficher liste users datastore, idem liste posts images
-
-//https://cloud.google.com/appengine/docs/standard/java11/using-cloud-storage
-//Je viens de remarquer un truc, notre backend utilise java 8 ou 11..?
-//Apparament c'est le 8?
+Trucs à faire samedi 27 :
+Mieux organiser les fichiers
+vérifier api fonctionne
+créer des kinds
+faire une timeline
 -->
-
 </html>

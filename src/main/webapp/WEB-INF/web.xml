@@ -28,6 +28,12 @@
 		<welcome-file>index.html</welcome-file>
 	</welcome-file-list>
 
+	<mime-mapping> 
+		<extension>js</extension>
+		<mime-type>application/javascript</mime-type> 
+	</mime-mapping>
+	
+
 	<!-- [START api_management] -->
     <!-- Add a filter that fetches the service config from service management. -->
 <!-- 	<filter> -->

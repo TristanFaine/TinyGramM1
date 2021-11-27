@@ -14,6 +14,8 @@ function readFile() {
             //TODO: Check if data is actually an image before sending...
             //maybe restrict input to .jpg and/or .png
 
+            //TODO: Envoyer objet json plutot qu'un formdata 
+
             var fd = new FormData();
             fd.append("userImage", e.target.result);
             fd.append("userName", GoogleAuth.currentUser.get().getBasicProfile().getName());
