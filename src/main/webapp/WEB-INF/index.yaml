@@ -2,5 +2,7 @@ indexes:
 - kind: User 
   properties: 
     - name: name
-    - name: age
-    
+    - name: following
+      direction: desc
+    - name: followers
+      direction: desc
