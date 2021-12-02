@@ -25,8 +25,10 @@ import com.google.appengine.api.datastore.DatastoreService;
 import com.google.appengine.api.datastore.DatastoreServiceFactory;
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.EntityNotFoundException;
+import com.google.appengine.api.datastore.FetchOptions;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
+import com.google.appengine.api.datastore.PreparedQuery;
 import com.google.appengine.api.datastore.Query;
 import com.google.appengine.api.datastore.Query.FilterOperator;
 import com.google.cloud.storage.Storage;
@@ -81,6 +83,15 @@ public class Endpoint {
         }
     }
 
+    @ApiMethod(name = "users", httpMethod = HttpMethod.GET, path = "users")
+    public List<Entity> getUsers(HttpServletRequest req) {
+        Query q = new Query("User");
+        DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
+        PreparedQuery pq = datastore.prepare(q);
+        List<Entity> result = pq.asList(FetchOptions.Builder.withLimit(100));
+        return result;
+    }
+
     @ApiMethod(name = "addImage", httpMethod = HttpMethod.POST, path = "addImage")
     public Map<String, String> addImage(HttpServletRequest req, @Named("imageString") String imageString,
             @Named("description") String description) throws GeneralSecurityException, IOException, Exception {
@@ -94,110 +105,106 @@ public class Endpoint {
                         .singletonList("852760108989-gqn73cl4kuk3nb5a8mgf38rgace4u3lk.apps.googleusercontent.com"))
                 .build();
 
-                GoogleIdToken idToken = verifier.verify(userToken);
+        GoogleIdToken idToken = verifier.verify(userToken);
 
-                if (idToken != null) {
-                    Payload payload = idToken.getPayload();
-                    String userId = payload.getSubject();
+        if (idToken != null) {
+            Payload payload = idToken.getPayload();
+            String userId = payload.getSubject();
 
-                    String[] parts = imageString.split("[,]");
-                    imageString = parts[1];
-                    String fileExtension = parts[0].split("[/]")[1].split("[;]")[0];
-                    
+            String[] parts = imageString.split("[,]");
+            imageString = parts[1];
+            String fileExtension = parts[0].split("[/]")[1].split("[;]")[0];
 
-                    byte[] decode = Base64.getDecoder().decode(imageString);
-                    InputStream is = new ByteArrayInputStream(decode);
-                    /* This sometimes fails for no reason, kept in case we need to re-use
-                    try {
-                        mimeType = URLConnection.guessContentTypeFromStream(is);
-                        String delimiter="[/]";
-                        String[] tokens = mimeType.split(delimiter); //This fails if we encounter a duck. what the fuck? oh, new lines from string.
-                        fileExtension = tokens[1];
-                    } catch (IOException ioException){
-                        throw new Exception("trucs: " + fileExtension,ioException); 
-                    }
-                    */
+            byte[] decode = Base64.getDecoder().decode(imageString);
+            InputStream is = new ByteArrayInputStream(decode);
+            /*
+             * This sometimes fails for no reason, kept in case we need to re-use
+             * try {
+             * mimeType = URLConnection.guessContentTypeFromStream(is);
+             * String delimiter="[/]";
+             * String[] tokens = mimeType.split(delimiter); //This fails if we encounter a
+             * duck. what the fuck? oh, new lines from string.
+             * fileExtension = tokens[1];
+             * } catch (IOException ioException){
+             * throw new Exception("trucs: " + fileExtension,ioException);
+             * }
+             */
 
-                    //TODO: Définir ces trucs avec les env var de webapp\WEB-INF\appengine-web.xml
-                    // The ID of your GCP project
-                    String projectId = "projet-tinygram-tf ";
-                
-                    // The ID of your GCS bucket
-                    String bucketName = "projet-tinygram-tf.appspot.com";
-                
-                    // The ID of your GCS object
-                    String objectName = "random" + description + "." + fileExtension;
-                    //TODO : do something actually random..
+            // TODO: Définir ces trucs avec les env var de webapp\WEB-INF\appengine-web.xml
+            // The ID of your GCP project
+            String projectId = "projet-tinygram-tf ";
 
-                    
+            // The ID of your GCS bucket
+            String bucketName = "projet-tinygram-tf.appspot.com";
 
-         
-                    Storage storage = StorageOptions.newBuilder().setProjectId(projectId).build().getService();
-                    BlobId blobId = BlobId.of(bucketName, objectName);
-                    BlobInfo blobInfo = BlobInfo.newBuilder(blobId).setContentType("image/" + fileExtension).build();
-                    storage.create(blobInfo, decode);
+            // The ID of your GCS object
+            String objectName = "random" + description + "." + fileExtension;
+            // TODO : do something actually random..
 
+            Storage storage = StorageOptions.newBuilder().setProjectId(projectId).build().getService();
+            BlobId blobId = BlobId.of(bucketName, objectName);
+            BlobInfo blobInfo = BlobInfo.newBuilder(blobId).setContentType("image/" + fileExtension).build();
+            storage.create(blobInfo, decode);
 
-
-
-                    String imageURL  = "http://storage.googleapis.com/" + bucketName + "/" + objectName;
-                    try {
-                        datastore.get(KeyFactory.createKey("Post", imageURL));
-                    } catch (EntityNotFoundException e) {
-                        Entity post = new Entity("Post", imageURL);
-                        post.setProperty("userId", userId);
-                        post.setProperty("creationDate", new SimpleDateFormat("yyyy-mm-dd hh:mm:ss").format(new Date()));
-                        post.setProperty("description", description);
-                        datastore.put(post);
-                    }
-                    Map<String, String> map = new HashMap<String, String>();
-                    map.put("result", imageURL);
-                    return map;
-                } else {
-                    // Cette partie du code est si le token n'est pas reconnu | est expiré
-                    return Collections.singletonMap("error", "error : token unrecognized");
-                }
+            String imageURL = "http://storage.googleapis.com/" + bucketName + "/" + objectName;
+            try {
+                datastore.get(KeyFactory.createKey("Post", imageURL));
+            } catch (EntityNotFoundException e) {
+                Entity post = new Entity("Post", imageURL);
+                post.setProperty("userId", userId);
+                post.setProperty("creationDate", new SimpleDateFormat("yyyy-mm-dd hh:mm:ss").format(new Date()));
+                post.setProperty("description", description);
+                datastore.put(post);
+            }
+            Map<String, String> map = new HashMap<String, String>();
+            map.put("result", imageURL);
+            return map;
+        } else {
+            // Cette partie du code est si le token n'est pas reconnu | est expiré
+            return Collections.singletonMap("error", "error : token unrecognized");
+        }
     }
 
     @ApiMethod(name = "getImage", httpMethod = HttpMethod.GET, path = "getImage")
     public List<String> getImage(HttpServletRequest req) throws GeneralSecurityException, IOException {
         DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
         String userToken = req.getHeader("Authorization").substring(7);
-        //https://storage.googleapis.com/BUCKET/path/to/image.jpg
+        // https://storage.googleapis.com/BUCKET/path/to/image.jpg
 
-        return Arrays.asList("Astaghfirullah mais ton token n'est pas valide ou tu n'accorde pas les autorisations nécessaires");
+        return Arrays.asList(
+                "Astaghfirullah mais ton token n'est pas valide ou tu n'accorde pas les autorisations nécessaires");
 
+        // recuperer image depuis sa clé ou son url? url je suppose.
 
-        //recuperer image depuis sa clé ou son url? url je suppose.
+        /*
+         * Tests :
+         * -- 1 : Peut-il obtenir le token via header Authorization? V
+         * -- 2 : Peut-il lire correctement le contenu? V
+         * -- 3 : Peut-il utiliser les credentials Google correctement? V
+         * -- 4 : Peut-il se connecter datastore/cloud storage pour utiliser bucket | V
+         * pour l'écriture | V pour la lecture
+         */
 
+        /*
+         * Trucs à faire :
+         * Faire modèle kinds posts (id, imageURL, followedbylist)
+         * Peut-être faire un kind followedBy pour pouvoir le mettre à jour?
+         * //On suppose qu'un user peut avoir accès aux posts des gens qu'il follow
+         * //OU on suppose qu'un post est envoyè aux users inscrits
+         * //je sais plus trop c'est quoi la meilleur façon
+         * 
+         * Produire méthode : getImage | getTimeline
+         * 
+         * //propriété follow/listener sur post ou user
+         * 
+         * 
+         * 
+         */
 
-
-    /* Tests :
-        -- 1 : Peut-il obtenir le token via header Authorization? V
-        -- 2 : Peut-il lire correctement le contenu? V
-        -- 3 : Peut-il utiliser les credentials Google correctement? V
-        -- 4 : Peut-il se connecter datastore/cloud storage pour utiliser bucket | V pour l'écriture | V pour la lecture
-    */
-
-    /*Trucs à faire :
-        Faire modèle kinds posts (id, imageURL, followedbylist)
-        Peut-être faire un kind followedBy pour pouvoir le mettre à jour?
-        //On suppose qu'un user peut avoir accès aux posts des gens qu'il follow
-        //OU on suppose qu'un post est envoyè aux users inscrits
-        //je sais plus trop c'est quoi la meilleur façon
-
-        Produire méthode : getImage | getTimeline
-
-        //propriété follow/listener sur post ou user
-
-
-
-    */
-    
-    //https://cloud.google.com/appengine/docs/standard/java/using-cloud-storage
-    //https://cloud.google.com/storage/docs/reference/libraries#client-libraries-install-java
-    //https://cloud.google.com/storage/docs/uploading-objects#storage-upload-object-java
-    //https://cloud.google.com/storage/docs/downloading-objects#storage-download-object-java
+        // https://cloud.google.com/appengine/docs/standard/java/using-cloud-storage
+        // https://cloud.google.com/storage/docs/reference/libraries#client-libraries-install-java
+        // https://cloud.google.com/storage/docs/uploading-objects#storage-upload-object-java
+        // https://cloud.google.com/storage/docs/downloading-objects#storage-download-object-java
 
     }
 }

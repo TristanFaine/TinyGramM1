@@ -13,9 +13,10 @@
     <nav class="topnav">
         <a class="active" href="#Splash">Menu Principal</a>
         <button id="sign-in-or-out-button">Connexion/Autorisation</button>
-        <button id="revoke-access-button" style="display: none">Révoquer Accès </button>
-        <button id="image-post-access-button" style="display: none">Poster une image</button>
-        <button id="profile-access-button" class="" style="display: none">Voir profil</button>
+        <button id="subscriptions-button" class="topnav-authOnly">Abonnements</button>
+        <button id="revoke-access-button" class="topnav-authOnly">Révoquer Accès </button>
+        <button id="image-post-access-button" class="topnav-authOnly">Poster une image</button>
+        <button id="profile-access-button" class="topnav-authOnly">Voir profil</button>
     </nav>
     <div id="auth-status"></div>
     <main id="app"></main>
@@ -52,6 +53,7 @@
 
             document.getElementById("sign-in-or-out-button").addEventListener('click', handleAuthClick, false);
             document.getElementById("revoke-access-button").addEventListener('click', revokeAccess, false);
+            document.getElementById("subscriptions-button").addEventListener("click", showSubscriptions, false);
             document.getElementById("profile-access-button").addEventListener('click', showProfile, false);
             document.getElementById("image-post-access-button").addEventListener('click', showSendImage, false);
         })
@@ -66,7 +68,8 @@
                     method: 'POST',
                     url: '/_ah/api/api/v1/addUser',
                     headers: {
-                        "Authorization": "Bearer " + GoogleAuth.currentUser.get().getAuthResponse().id_token
+                        "Authorization": "Bearer " + GoogleAuth.currentUser.get().getAuthResponse()
+                            .id_token
                     }
                 }).then(x => console.log(x))
             });
@@ -106,6 +109,18 @@
 
     function showUserInsertion() {
         m.route.set("/AddUser")
+    }
+
+    /**
+     * Envoie vers la page des abonnements, si l’utilisateur est connecté
+     */
+    function showSubscriptions() {
+        if (GoogleAuth.currentUser.get().hasGrantedScopes(SCOPE)) {
+            var d = GoogleAuth.currentUser.get().hasGrantedScopes(SCOPE);
+        }
+        m.route.set("/Subscriptions", {
+            authStatus: d
+        });
     }
 
     function showProfile() {
@@ -167,15 +182,15 @@
         var isAuthorized = user.hasGrantedScopes(SCOPE);
         if (isAuthorized) {
             document.getElementById("sign-in-or-out-button").innerHTML = ("Déconnexion");
-            document.getElementById("revoke-access-button").style.display = "inline-block";
-            document.getElementById("profile-access-button").style.display = "inline-block";
-            document.getElementById("image-post-access-button").style.display = "inline-block";
+            document.querySelectorAll(".topnav-authOnly").forEach(b => {
+                b.style.display = "inline-block";
+            })
             document.getElementById("auth-status").innerHTML = ("Connecté + permissions accordées");
         } else {
             document.getElementById("sign-in-or-out-button").innerHTML = ("Sign In/Authorize");
-            document.getElementById("revoke-access-button").style.display = "none";
-            document.getElementById("profile-access-button").style.display = "none";
-            document.getElementById("image-post-access-button").style.display = "none";
+            document.querySelectorAll(".topnav-authOnly").forEach(b => {
+                b.style.display = "none";
+            })
             document.getElementById("auth-status").innerHTML = ("Déconnecté, ou permissions non accordées");
         }
         //Quick and dirty routing on signin status change, but it works
@@ -186,8 +201,8 @@
 
 
 <script async defer src="https://apis.google.com/js/api.js" onload="this.onload=function(){};handleClientLoad()"
-    onreadystatechange="if (this.readyState === 'complete') this.onload()">
-    </script>
+        onreadystatechange="if (this.readyState === 'complete') this.onload()">
+</script>
 
 
 

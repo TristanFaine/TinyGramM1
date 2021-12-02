@@ -28,7 +28,7 @@ import UnknownProfile from "/../views/UnknownProfile.js";
 import Profile from "/../views/Profile.js";
 import AddUser from "/../views/AddUser.js";
 import SendImage from "/../views/SendImage.js";
-
+import Subscriptions from "/../views/Subscriptions.js";
 
 var app = document.getElementById("app");
 
@@ -39,15 +39,32 @@ m.route(app, "/Splash", {
   "/UnknownProfile": UnknownProfile,
   "/Profile": {
     onmatch: function () {
-      if (GoogleAuth.currentUser.get().hasGrantedScopes(SCOPE) === undefined || !GoogleAuth.currentUser.get().hasGrantedScopes(SCOPE)) m.route.set("/UnknownProfile");
+      if (
+        GoogleAuth.currentUser.get().hasGrantedScopes(SCOPE) === undefined ||
+        !GoogleAuth.currentUser.get().hasGrantedScopes(SCOPE)
+      )
+        m.route.set("/UnknownProfile");
       else return Profile;
-    }
+    },
   },
   "/SendImage": {
     onmatch: function () {
-      if (GoogleAuth.currentUser.get().hasGrantedScopes(SCOPE) === undefined || !GoogleAuth.currentUser.get().hasGrantedScopes(SCOPE)) m.route.set("/Splash");
+      if (
+        GoogleAuth.currentUser.get().hasGrantedScopes(SCOPE) === undefined ||
+        !GoogleAuth.currentUser.get().hasGrantedScopes(SCOPE)
+      )
+        m.route.set("/Splash");
       else return SendImage;
     },
   },
+  "/Subscriptions": {
+    onmatch: function () {
+      if (
+        GoogleAuth.currentUser.get().hasGrantedScopes(SCOPE) === undefined ||
+        !GoogleAuth.currentUser.get().hasGrantedScopes(SCOPE)
+      )
+        m.route.set("/Splash");
+      else return Subscriptions;
+    },
+  },
 });
-

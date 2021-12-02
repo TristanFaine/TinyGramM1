@@ -34,6 +34,10 @@ body > * {
   gap: 1ex;
 }
 
+.topnav-authOnly {
+  display: none;
+}
+
 button,
 input[type="submit"],
 a {
