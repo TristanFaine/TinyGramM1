@@ -24,10 +24,7 @@ function readFile() {
                     m.render(document.getElementById("reponse"),
                     //.result est un nom qu'on a donné au paramétre de réponse principale,
                         `Reception de réponse ${data.result}`);
-                    
-                    //Note : On pourrait aussi envoyer le string base64 SANS le prefixe data url, et mettre en parametre supplémentaire, mais bon on va pas le faire.
-                    //est-ce bien, est-ce une mauvaise idée, qui sait.
-                    document.getElementById("imagePreviewBack").src = "data:image/png;base64," + data.result;
+                    document.getElementById("imagePreviewBack").src = data.result;
                 })
          } else {
              document.getElementById("reponse").innerHTML = "Cette application ne prends en compte que les fichiers jpeg ou png."}

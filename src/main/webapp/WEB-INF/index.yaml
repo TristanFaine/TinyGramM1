@@ -1,6 +1,16 @@
 indexes:
 - kind: User 
-  properties: 
+  properties: # clé = id? ouais ok pour l'instant
     - name: name
-    - name: age
-    
+    - name: following
+      direction: desc
+    - name: followers
+      direction: desc 
+- kind: Post
+  properties: # clé = image string? ouais ok pour l'instant
+    - name: userId
+    - name: creationDate
+    - name: description
+      direction: desc
+    - name: imageURL
+      direction: desc 
