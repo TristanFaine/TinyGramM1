@@ -25,7 +25,10 @@ import com.google.appengine.api.datastore.DatastoreService;
 import com.google.appengine.api.datastore.DatastoreServiceFactory;
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.EntityNotFoundException;
+import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
+import com.google.appengine.api.datastore.Query;
+import com.google.appengine.api.datastore.Query.FilterOperator;
 import com.google.cloud.storage.Storage;
 import com.google.cloud.storage.StorageOptions;
 import com.google.cloud.storage.BlobId;
@@ -52,36 +55,43 @@ public class Endpoint {
         String userToken = req.getHeader("Authorization").substring(7);
 
         GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(new NetHttpTransport(), new GsonFactory())
-                .setAudience(Collections.singletonList("852760108989-gqn73cl4kuk3nb5a8mgf38rgace4u3lk.apps.googleusercontent.com"))
+                .setAudience(Collections
+                        .singletonList("852760108989-gqn73cl4kuk3nb5a8mgf38rgace4u3lk.apps.googleusercontent.com"))
                 .build();
 
-                GoogleIdToken idToken = verifier.verify(userToken);
-                if (idToken != null) {
-                    Payload payload = idToken.getPayload();
-                    String userId = payload.getSubject();
-                    try {
-                        datastore.get(KeyFactory.createKey("User", userId));
-                    } catch (EntityNotFoundException e) {
-                        Entity user = new Entity("User", userId);
-                        user.setProperty("name", payload.get("given_name") + " " + payload.get("family_name"));
-                        user.setProperty("following", new HashSet<String>());
-                        user.setProperty("followers", new HashSet<String>());
-                        datastore.put(user);
-                    }
-                    
-                    return Arrays.asList(userId);
-                } else {
-                    return Arrays.asList("Astaghfirullah mais ton token n'est pas valide ou tu n'accorde pas les autorisations nécessaires" + userToken);
-                }
+        GoogleIdToken idToken = verifier.verify(userToken);
+        if (idToken != null) {
+            Payload payload = idToken.getPayload();
+            String userId = payload.getSubject();
+            // Ajout d’un nouvel utilisateur s’il n’existe déjà
+            try {
+                datastore.get(KeyFactory.createKey("User", userId));
+            } catch (EntityNotFoundException e) {
+                Entity user = new Entity("User", userId);
+                user.setProperty("name", payload.get("given_name") + " " + payload.get("family_name"));
+                user.setProperty("following", new HashSet<String>());
+                user.setProperty("followers", new HashSet<String>());
+                datastore.put(user);
+            }
+            return Arrays.asList(userId);
+        } else {
+            return Arrays.asList(
+                    "Astaghfirullah mais ton token n'est pas valide ou tu n'accordes pas les autorisations nécessaires"
+                            + userToken);
+        }
     }
 
     @ApiMethod(name = "addImage", httpMethod = HttpMethod.POST, path = "addImage")
-    public Map<String, String> addImage(HttpServletRequest req, @Named("imageString") String imageString, @Named("description") String description) throws GeneralSecurityException, IOException, Exception {
+    public Map<String, String> addImage(HttpServletRequest req, @Named("imageString") String imageString,
+            @Named("description") String description) throws GeneralSecurityException, IOException, Exception {
         DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
         String userToken = req.getHeader("Authorization").substring(7);
 
+        // https://stackoverflow.com/questions/25309464/send-image-from-android-client-to-appengine-cloud-endpoint
+
         GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(new NetHttpTransport(), new GsonFactory())
-                .setAudience(Collections.singletonList("852760108989-gqn73cl4kuk3nb5a8mgf38rgace4u3lk.apps.googleusercontent.com"))
+                .setAudience(Collections
+                        .singletonList("852760108989-gqn73cl4kuk3nb5a8mgf38rgace4u3lk.apps.googleusercontent.com"))
                 .build();
 
                 GoogleIdToken idToken = verifier.verify(userToken);

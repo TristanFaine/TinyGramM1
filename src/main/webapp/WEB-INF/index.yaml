@@ -7,10 +7,8 @@ indexes:
     - name: followers
       direction: desc 
 - kind: Post
-  properties: # clé = image string? ouais ok pour l'instant
+  properties: # clé = url string? ouais ok pour l'instant
     - name: userId
     - name: creationDate
     - name: description
-      direction: desc
-    - name: imageURL
-      direction: desc 
+
