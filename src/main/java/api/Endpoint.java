@@ -6,6 +6,7 @@ import java.io.ByteArrayInputStream;
 import java.net.URLConnection;
 import java.security.GeneralSecurityException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
@@ -90,6 +91,29 @@ public class Endpoint {
         PreparedQuery pq = datastore.prepare(q);
         List<Entity> result = pq.asList(FetchOptions.Builder.withLimit(100));
         return result;
+    }
+
+    @ApiMethod(name = "follow", httpMethod = HttpMethod.POST, path = "follow")
+    public boolean follow(HttpServletRequest req, String qqn) throws GeneralSecurityException, IOException {
+        DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
+        String userToken = req.getHeader("Authorization").substring(7);
+
+        GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(new NetHttpTransport(), new GsonFactory())
+                .setAudience(Collections
+                        .singletonList("852760108989-gqn73cl4kuk3nb5a8mgf38rgace4u3lk.apps.googleusercontent.com"))
+                .build();
+
+        GoogleIdToken idToken = verifier.verify(userToken);
+        if (idToken != null) {
+            Payload payload = idToken.getPayload();
+            String userId = payload.getSubject();
+            /**
+             * TODO Mettre à jour en ajoutant qqn à l’attribut `following`
+             */
+            return true;
+
+        }
+        return false;
     }
 
     @ApiMethod(name = "addImage", httpMethod = HttpMethod.POST, path = "addImage")

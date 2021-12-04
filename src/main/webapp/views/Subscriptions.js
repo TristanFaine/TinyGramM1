@@ -1,25 +1,65 @@
+/**
+ * Vue pour les abonnements
+ */
 var Subscriptions = {
-    oncreate: function (vnode) {
-        m.request({
-          method: "GET",
-          url: "/_ah/api/api/v1/users",
-        }).then((x) => console.log(x));
-    },
-    view: function (vnode) {
-      if (vnode.attrs.authStatus === undefined || !vnode.attrs.authStatus) {
-        return m("div", [
-          m(
-            "h1",
-            {
-              id: "userNotConnectedHeader",
-            },
-            "Veuillez vous connecter pour accéder à ce service."
-          ),
-        ]);
-      } else {
-        return m("h1", "Ça marche");
-      }
-    },
-  };
-  export default Subscriptions;
-  
+  /**
+   * Liste des utilisateurs
+   */
+  users: m("div", { class: "Subscriptions-List" }, "Chargement en cours..."),
+  /**
+   * Requête au chargement de la vue
+   */
+  oncreate: function (vnode) {
+    console.log(vnode);
+    m.request({
+      method: "GET",
+      url: "/_ah/api/api/v1/users",
+    }).then((res) => {
+      Subscriptions.users = m(
+        "ul",
+        { class: "Subscriptions-List" },
+        res.items.map((user) =>
+          m("li", [
+            user.properties.name,
+            m(
+              "button",
+              {
+                class: "Subscriptions-button",
+                onclick: (e) => {
+                  m.request({
+                    method: "POST",
+                    url: "/_ah/api/api/v1/follow",
+                  }).then(
+                    (res) =>
+                      (e.target.innerText =
+                        "Se désabonner") /* Mensonger pour le moment */
+                  );
+                },
+              },
+              "Suivre"
+            ),
+          ])
+        )
+      );
+    });
+  },
+  /**
+   * Vue des abonnements effectifs et potentiels
+   */
+  view: function (vnode) {
+    if (vnode.attrs.authStatus === undefined || !vnode.attrs.authStatus) {
+      return m("div", [
+        m(
+          "h1",
+          {
+            id: "userNotConnectedHeader",
+          },
+          "Veuillez vous connecter pour accéder à ce service."
+        ),
+      ]);
+    } else {
+      return [m("h1", "Abonnements"), Subscriptions.users];
+    }
+  },
+};
+export default Subscriptions;
