@@ -120,17 +120,18 @@ public class Endpoint {
             /**
              * Ajoute l'utilisateur ayant fait la requête dans la liste (followers) de l'entité qu'il souhaite follow
              */
+            //TODO: ça scale mieux si on utilise des clés plutot que des attributs mais bon.
             try {
                 Entity userFollowChecked = datastore.get(userFollow.getKey()); //Check si l'entité existe
                 @SuppressWarnings("unchecked") // Cast ne peut pas vérifier type générique Object
-                HashSet<String>followList = (HashSet<String>) userFollowChecked.getProperty("followers");
+                List<String>followList = (List<String>) userFollowChecked.getProperty("followers");
                 if(followList == null){
-                    HashSet<String>fallbackList = new HashSet<String>();
-                    fallbackList.add(followId);
+                    List<String>fallbackList = new ArrayList<String>();
+                    fallbackList.add(userId);
                     userFollowChecked.setProperty("followers", fallbackList);
                     datastore.put(userFollowChecked);
                 } else {
-                    followList.add(followId);
+                    followList.add(userId);
                     userFollowChecked.setProperty("followers", followList);
                     datastore.put(userFollowChecked);
                 }
@@ -146,10 +147,10 @@ public class Endpoint {
                 Entity userSelf = new Entity("User",userId);
                 Entity userSelfChecked=datastore.get(userSelf.getKey());
                 @SuppressWarnings("unchecked") // Cast can't verify generic type.
-                HashSet<String>followingList = (HashSet<String>) userSelfChecked.getProperty("following");
+                List<String>followingList = (List<String>) userSelfChecked.getProperty("following");
                 if(followingList == null){
-                    HashSet<String>fallbackList = new HashSet<String>();
-                    fallbackList.add((String)userSelfChecked.getProperty("name"));
+                    List<String>fallbackList = new ArrayList<String>();
+                    fallbackList.add(followId);
                     userSelfChecked.setProperty("following", fallbackList);
                     datastore.put(userSelfChecked);
                 } else {

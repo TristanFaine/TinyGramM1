@@ -1,5 +1,3 @@
-//TODO: just make a load function with 2 parameters, size and mode, to 
-//call API
 var Gram = {
     list: [],
     loadList: function(f) {
@@ -23,6 +21,5 @@ var Gram = {
         })
     }
 }
-
 
 export default Gram;

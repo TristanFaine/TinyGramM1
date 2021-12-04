@@ -26,7 +26,7 @@ var GramView = {
                     onclick: e => {
                         e.preventDefault();
                         e.redraw = false; //wait for events to finish before loading
-                        //Ne pas autoriser à relancer l'appel
+                        //Ne pas autoriser à relancer la même action
                         if (GramView.filter != "All") {
                             GramView.filter = "All";
                             Gram.loadList(GramView.filter);
@@ -38,7 +38,7 @@ var GramView = {
                     onclick: e => {
                         e.preventDefault();
                         e.redraw = false; //wait for events to finish before loading
-                        //Ne pas autoriser à relancer l'appel
+                        //Ne pas autoriser à relancer la même action
                         if (GramView.filter != "SubbedOnly") {
                             GramView.filter = "SubbedOnly";
                             Gram.loadList(GramView.filter);
