@@ -5,6 +5,7 @@ import java.io.InputStream;
 import java.io.ByteArrayInputStream;
 import java.net.URLConnection;
 import java.security.GeneralSecurityException;
+import java.security.SecureRandom;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -99,7 +100,7 @@ public class Endpoint {
     }
 
     @ApiMethod(name = "follow", httpMethod = HttpMethod.POST, path = "follow")
-    public Map<String, Boolean> follow(HttpServletRequest req, @Named("followId") String followId) throws GeneralSecurityException, IOException {
+    public Map<String, String> follow(HttpServletRequest req, @Named("followId") String followId) throws GeneralSecurityException, IOException {
         DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
         String userToken = req.getHeader("Authorization").substring(7);
 
@@ -114,29 +115,32 @@ public class Endpoint {
             String userId = payload.getSubject();
 
             if (userId.equals(followId)) {
-                return Collections.singletonMap("error(Can'tFollowSelf)", false);
+                return Collections.singletonMap("error", "Cannot follow oneself");
             }
             Entity userFollow = new Entity("User",followId);
             /**
              * Ajoute l'utilisateur ayant fait la requête dans la liste (followers) de l'entité qu'il souhaite follow
              */
-            //TODO: ça scale mieux si on utilise des clés plutot que des attributs mais bon.
             try {
                 Entity userFollowChecked = datastore.get(userFollow.getKey()); //Check si l'entité existe
                 @SuppressWarnings("unchecked") // Cast ne peut pas vérifier type générique Object
+                
                 List<String>followList = (List<String>) userFollowChecked.getProperty("followers");
+                
                 if(followList == null){
                     List<String>fallbackList = new ArrayList<String>();
                     fallbackList.add(userId);
                     userFollowChecked.setProperty("followers", fallbackList);
                     datastore.put(userFollowChecked);
-                } else {
+                } else {                 
+                    if(followList.contains(userId)) {
+                        return Collections.singletonMap("error", "Can only follow someone once");
+                    } else 
                     followList.add(userId);
                     userFollowChecked.setProperty("followers", followList);
                     datastore.put(userFollowChecked);
                 }
             } catch (EntityNotFoundException userFollowChecked) {
-                // TODO Auto-generated catch block
                 userFollowChecked.printStackTrace();
             }
 
@@ -154,19 +158,19 @@ public class Endpoint {
                     userSelfChecked.setProperty("following", fallbackList);
                     datastore.put(userSelfChecked);
                 } else {
+                    if(followingList.contains(followId)) {
+                        return Collections.singletonMap("error", "Can only be followed by someone once");
+                    }
                     followingList.add(followId);
                     userSelfChecked.setProperty("following", followingList);
                     datastore.put(userSelfChecked);
                 }
             } catch (EntityNotFoundException userSelfChecked) {
-                // TODO Auto-generated catch block
                 userSelfChecked.printStackTrace();
             }
-
-            return Collections.singletonMap("result", true);
-
+            return Collections.singletonMap("result", "No problem");
         }
-        return Collections.singletonMap("error(InvalidToken)", false);
+        return Collections.singletonMap("error", "Invalid Token");
     }
 
     @ApiMethod(name = "addImage", httpMethod = HttpMethod.POST, path = "addImage")
@@ -189,23 +193,11 @@ public class Endpoint {
             imageString = parts[1];
             String fileExtension = parts[0].split("[/]")[1].split("[;]")[0];
             byte[] decode = Base64.getDecoder().decode(imageString);
-            //InputStream is = new ByteArrayInputStream(decode);
-            /*
-             * This sometimes fails for no reason, kept in case we need to re-use
-             * try {
-             * mimeType = URLConnection.guessContentTypeFromStream(is);
-             * String delimiter="[/]";
-             * String[] tokens = mimeType.split(delimiter);
-             * fileExtension = tokens[1];
-             * } catch (IOException ioException){
-             * throw new Exception("trucs: " + fileExtension,ioException);
-             * }
-             */
 
             String projectId = "projet-tinygram-tf ";
             String bucketName = "projet-tinygram-tf.appspot.com";
+            String timestamp = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss").format(new Date());
             String objectName = userId + description + "." + fileExtension;
-            // TODO : do something other than this... but what?
 
             Storage storage = StorageOptions.newBuilder().setProjectId(projectId).build().getService();
             BlobId blobId = BlobId.of(bucketName, objectName);
@@ -213,21 +205,27 @@ public class Endpoint {
             storage.create(blobInfo, decode);
 
             String imageURL = "http://storage.googleapis.com/" + bucketName + "/" + objectName;
-            try {
-                datastore.get(KeyFactory.createKey("Post", imageURL));
-            } catch (EntityNotFoundException e) {
-                Entity post = new Entity("Post", imageURL);
-                post.setProperty("userId", userId);
-                post.setProperty("creationDate", new SimpleDateFormat("yyyy-MM-dd hh:mm:ss").format(new Date()));
-                post.setProperty("description", description);
-                post.setProperty("likeCounter", 0);
-                datastore.put(post);
-            }
+
+
+            //TODO: define likecounter as a children thing
+            //https://docs.google.com/presentation/d/1rjrl-mPkG6zUukZeE_bbA8QU7PqNWu6HHHoBF1H17dQ/edit#slide=id.p29
+            //voir aux alentours de la slide 24
+            //String random pour différencier posts lors de la même seconde
+            String AB = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+            SecureRandom rnd = new SecureRandom();
+                StringBuilder sb = new StringBuilder(26);
+                for(int i = 0; i < 26; i++)
+                    sb.append(AB.charAt(rnd.nextInt(AB.length())));
+            Entity post = new Entity("Post", timestamp + sb.toString());
+            post.setProperty("imageURL", imageURL);
+            post.setProperty("userId", userId);
+            post.setProperty("description", description);
+            post.setProperty("likeCounter", 0);
+            datastore.put(post);
             Map<String, String> map = new HashMap<String, String>();
             map.put("result", imageURL);
             return map;
         } else {
-            // Cette partie du code est si le token n'est pas reconnu | est expiré
             return Collections.singletonMap("error", "Invalid Token");
         }
     }
@@ -235,16 +233,19 @@ public class Endpoint {
     @ApiMethod(name = "getPosts", httpMethod = HttpMethod.GET, path = "getPosts")
     public List<Entity> getPosts(HttpServletRequest req, @Named("filter") String filter) throws GeneralSecurityException, IOException {
         DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
-        
         if (filter.equals("SubbedOnly")) {
             //TODO: avec userId, recup les trucs où on est inscrit en tant que listener
 
             //Récupérer les posts où on apparait en tant que listener..?
+            //https://docs.google.com/presentation/d/1rjrl-mPkG6zUukZeE_bbA8QU7PqNWu6HHHoBF1H17dQ/edit#slide=id.p29
+            //voir aux alentours de la slide 24
 
-            //En mieux écrit, prendre la clé userId =>
-            //Faire un query où dans chaque post, garder seulement là où on a
-            //following dans listener. Un truc projection?
+            //Autrement dit, prendre l'attribut userId depuis token puis
+            //faire un query où dans chaque post, garder seulement là si userId apparaît en tant que
+            //listener. 
             //et pis prendre genre X posts.
+
+
 
 
 
@@ -255,14 +256,13 @@ public class Endpoint {
                 .build();
             GoogleIdToken idToken = verifier.verify(userToken);
 
-            Query q = new Query("Post").addSort("creationDate", SortDirection.DESCENDING);
+            Query q = new Query("Post");
             PreparedQuery pq = datastore.prepare(q);
             List<Entity> result = pq.asList(FetchOptions.Builder.withLimit(10));
             return result;
         } else {
-            //Pas besoin de s'authentifier pour voir les nouveaux posts, c'est gratis
-            //TODO: Changer clé pour avoir ordre par date? Recupérer entité par clé est 2x plus efficace que récuperer par propriété
-            Query q = new Query("Post").addSort("creationDate", SortDirection.DESCENDING);
+            //Pas besoin de s'authentifier pour voir les nouveaux posts, la maison offre
+            Query q = new Query("Post").addSort("__key__", SortDirection.DESCENDING);
             PreparedQuery pq = datastore.prepare(q);
             List<Entity> result = pq.asList(FetchOptions.Builder.withLimit(10));
             return result;
@@ -296,6 +296,8 @@ public class Endpoint {
         //Useful things
         //https://youtu.be/I_E6RIsa2r4 projection queries| getting only keys then querying a subset based on these
 
+
+        //Définir post_receiver en tant qu'enfant du kind plutot qu'en tant qu'attribut|index.. hmm..
         // https://cloud.google.com/appengine/docs/standard/java/using-cloud-storage
         // https://cloud.google.com/storage/docs/reference/libraries#client-libraries-install-java
         // https://cloud.google.com/storage/docs/uploading-objects#storage-upload-object-java

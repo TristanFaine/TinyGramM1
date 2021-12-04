@@ -214,7 +214,7 @@
             document.getElementById("auth-status").innerHTML = ("Déconnecté, ou permissions non accordées");
         }
         //Quick and dirty routing on signin status change, but it works
-        //Note : mithril isn't loaded before this is called so everything breaks.
+        //Note : mithril isn't loaded before this is called so everything breaks sometimes
         //hm.
         routeSelect(m.route.get().split('?')[0]);
     }
@@ -245,24 +245,23 @@ Checklist :
 
 
 <!--
-    TODO for 04/12/2021:
-    We can see our own profil,
-    We can post something
-    We must :
-    Be able to see... ten new posts I guess, regardless of subbed or not.  V
-    Be able to like a post X
-    Be able to follow someone. ~
-    Be able to see the posts of those we've subbed to. ~
-    Which means.. either everytime someone posts, everyone that is currently subbed is added as a receiver
-    Or some other method i've forgotten the details of.
-    For now : let's do these components and underlying logic, then move on and cry when it's time to scale 
-    ShowNewPosts =>
-        Show the X new posts (let's say ten)
-        Allow someone to (try to) sub to this person
-        This implies making children component post
-    ShowSubbedPosts
-    Add like property to posts
-    Make it scale :)
+    Ok je me rappelle comment scale (merci Maxime)
+    1) Accés clé >> Accés index|property
+    Autrement dit, pour la timeline, prendre "bêtement" les clés
+    Donc faire en sorte que celles-ci sont triées par date
+    je crois que je l'ai déja fait?
+    Pour faire une pierre deux coups, implémenter les listeners|followers en tant qu'enfant
+
+    //https://docs.google.com/presentation/d/1rjrl-mPkG6zUukZeE_bbA8QU7PqNWu6HHHoBF1H17dQ/edit#slide=id.p29
+    //voir à partir slide 24 pour comment implémenter
+
+    //OK DONC TRUCS A FAIRE
+    Voir si notre truc trie correctement :D : V (j'ai pas vérifié tout les cas de figure)
+    Implémenter des children..?
+        LikeCounter : X
+        post.listener|receiver : X
+    Faire un truc unfollow mdr
+    
 
     Si on a le temps : Faire un composant User, qui recup infos depuis API
     le composant Profile utilisera donc le composant User

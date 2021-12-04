@@ -59,10 +59,10 @@ var GramView = {
                             }, postData.description),
                             m("div", {
                                 class: "likeContainer"
-                            }, postData.likeCounter),
+                            }, postData.likeCounter + " likes"),
                             m("div", {
                                 class: "ownerContainer"
-                            }, postData.userId)
+                            }, "Posted by : " + postData.userId)
                         ])
                     }))
                 ])

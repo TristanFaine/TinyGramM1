@@ -7,9 +7,9 @@ indexes:
     - name: followers
       direction: desc 
 - kind: Post
-  properties: # clé = url string? ouais ok pour l'instant
+  properties: # clé = timestamp + random letters |make likecounter and receivers children
+    - name: imageURL
     - name: userId
-    - name: creationDate
     - name: description
     - name: likeCounter
 

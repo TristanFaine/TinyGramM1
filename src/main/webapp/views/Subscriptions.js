@@ -10,7 +10,6 @@ var Subscriptions = {
    * Requête au chargement de la vue
    */
   oncreate: function (vnode) {
-    console.log(vnode);
     m.request({
       method: "GET",
       url: "/_ah/api/api/v1/users",
@@ -39,9 +38,10 @@ var Subscriptions = {
                   }).then(
                     (res) => {
                       console.log(res);
-                      //TODO : if res.truc = false alors ne rien faire
-                      //sinon remplacer le texte
-                      e.target.innerText ="Se désabonner"; /* Mensonger pour le moment */
+                      if (res.error === undefined) {
+                        e.target.innerText ="Se désabonner"; /* Mensonger pour le moment */
+                      }
+                      
                     }
                   );
                 },
