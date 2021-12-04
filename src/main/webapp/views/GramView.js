@@ -1,4 +1,6 @@
 //Logic, allow a "view new" or "view subbed" onupdate i guess?
+
+//TODO: Ajouter les trucs dans un PostList ici, pour pouvoir les voir quand on refresh
 import Gram from "../models/Gram.js";
 var GramView = {
     filter: "",

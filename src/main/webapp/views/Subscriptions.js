@@ -25,14 +25,24 @@ var Subscriptions = {
               "button",
               {
                 class: "Subscriptions-button",
+                value: user.key.name,
                 onclick: (e) => {
                   m.request({
                     method: "POST",
                     url: "/_ah/api/api/v1/follow",
+                    headers: {
+                      "Authorization": "Bearer " + GoogleAuth.currentUser.get().getAuthResponse().id_token
+                    },
+                    params: {
+                      followId: e.target.value,
+                    },
                   }).then(
-                    (res) =>
-                      (e.target.innerText =
-                        "Se désabonner") /* Mensonger pour le moment */
+                    (res) => {
+                      console.log(res);
+                      //TODO : if res.truc = false alors ne rien faire
+                      //sinon remplacer le texte
+                      e.target.innerText ="Se désabonner"; /* Mensonger pour le moment */
+                    }
                   );
                 },
               },

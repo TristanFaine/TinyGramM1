@@ -214,6 +214,8 @@
             document.getElementById("auth-status").innerHTML = ("Déconnecté, ou permissions non accordées");
         }
         //Quick and dirty routing on signin status change, but it works
+        //Note : mithril isn't loaded before this is called so everything breaks.
+        //hm.
         routeSelect(m.route.get().split('?')[0]);
     }
 </script>
@@ -247,10 +249,10 @@ Checklist :
     We can see our own profil,
     We can post something
     We must :
-    Be able to see... ten new posts I guess, regardless of subbed or not.
-    Be able to like a post
-    Be able to follow someone.
-    Be able to see the posts of those we've subbed to.
+    Be able to see... ten new posts I guess, regardless of subbed or not.  V
+    Be able to like a post X
+    Be able to follow someone. ~
+    Be able to see the posts of those we've subbed to. ~
     Which means.. either everytime someone posts, everyone that is currently subbed is added as a receiver
     Or some other method i've forgotten the details of.
     For now : let's do these components and underlying logic, then move on and cry when it's time to scale 

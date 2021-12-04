@@ -24,6 +24,7 @@ import com.google.api.server.spi.config.Named;
 import com.google.api.server.spi.config.ApiMethod.HttpMethod;
 import com.google.appengine.api.datastore.DatastoreService;
 import com.google.appengine.api.datastore.DatastoreServiceFactory;
+import com.google.appengine.api.datastore.EmbeddedEntity;
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.EntityNotFoundException;
 import com.google.appengine.api.datastore.FetchOptions;
@@ -31,6 +32,8 @@ import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
 import com.google.appengine.api.datastore.PreparedQuery;
 import com.google.appengine.api.datastore.Query;
+import com.google.appengine.api.datastore.Query.Filter;
+import com.google.appengine.api.datastore.Query.FilterPredicate;
 import com.google.appengine.api.datastore.Query.FilterOperator;
 import com.google.appengine.api.datastore.Query.SortDirection;
 import com.google.cloud.storage.Storage;
@@ -54,6 +57,7 @@ public class Endpoint {
     }
 
     @ApiMethod(name = "addUser", httpMethod = HttpMethod.POST, path = "addUser")
+    //TODO: switch this to a map, so we can expect a "success" OR "error" return
     public List<String> addUser(HttpServletRequest req) throws GeneralSecurityException, IOException {
         DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
         String userToken = req.getHeader("Authorization").substring(7);
@@ -80,7 +84,7 @@ public class Endpoint {
             return Arrays.asList(userId);
         } else {
             return Arrays.asList(
-                    "Astaghfirullah mais ton token n'est pas valide ou tu n'accordes pas les autorisations nécessaires"
+                    "Token invalide :"
                             + userToken);
         }
     }
@@ -95,7 +99,7 @@ public class Endpoint {
     }
 
     @ApiMethod(name = "follow", httpMethod = HttpMethod.POST, path = "follow")
-    public boolean follow(HttpServletRequest req, String qqn) throws GeneralSecurityException, IOException {
+    public Map<String, Boolean> follow(HttpServletRequest req, @Named("followId") String followId) throws GeneralSecurityException, IOException {
         DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
         String userToken = req.getHeader("Authorization").substring(7);
 
@@ -108,13 +112,60 @@ public class Endpoint {
         if (idToken != null) {
             Payload payload = idToken.getPayload();
             String userId = payload.getSubject();
+
+            if (userId.equals(followId)) {
+                return Collections.singletonMap("error(Can'tFollowSelf)", false);
+            }
+            Entity userFollow = new Entity("User",followId);
             /**
-             * TODO Mettre à jour en ajoutant qqn à l’attribut `following`
+             * Ajoute l'utilisateur ayant fait la requête dans la liste (followers) de l'entité qu'il souhaite follow
              */
-            return true;
+            try {
+                Entity userFollowChecked = datastore.get(userFollow.getKey()); //Check si l'entité existe
+                @SuppressWarnings("unchecked") // Cast ne peut pas vérifier type générique Object
+                HashSet<String>followList = (HashSet<String>) userFollowChecked.getProperty("followers");
+                if(followList == null){
+                    HashSet<String>fallbackList = new HashSet<String>();
+                    fallbackList.add(followId);
+                    userFollowChecked.setProperty("followers", fallbackList);
+                    datastore.put(userFollowChecked);
+                } else {
+                    followList.add(followId);
+                    userFollowChecked.setProperty("followers", followList);
+                    datastore.put(userFollowChecked);
+                }
+            } catch (EntityNotFoundException userFollowChecked) {
+                // TODO Auto-generated catch block
+                userFollowChecked.printStackTrace();
+            }
+
+            /**
+             * Ajoute l'entité que souhaite follow l'utilisateur dans son champ (following)
+             */
+            try {
+                Entity userSelf = new Entity("User",userId);
+                Entity userSelfChecked=datastore.get(userSelf.getKey());
+                @SuppressWarnings("unchecked") // Cast can't verify generic type.
+                HashSet<String>followingList = (HashSet<String>) userSelfChecked.getProperty("following");
+                if(followingList == null){
+                    HashSet<String>fallbackList = new HashSet<String>();
+                    fallbackList.add((String)userSelfChecked.getProperty("name"));
+                    userSelfChecked.setProperty("following", fallbackList);
+                    datastore.put(userSelfChecked);
+                } else {
+                    followingList.add(followId);
+                    userSelfChecked.setProperty("following", followingList);
+                    datastore.put(userSelfChecked);
+                }
+            } catch (EntityNotFoundException userSelfChecked) {
+                // TODO Auto-generated catch block
+                userSelfChecked.printStackTrace();
+            }
+
+            return Collections.singletonMap("result", true);
 
         }
-        return false;
+        return Collections.singletonMap("error(InvalidToken)", false);
     }
 
     @ApiMethod(name = "addImage", httpMethod = HttpMethod.POST, path = "addImage")
@@ -122,13 +173,10 @@ public class Endpoint {
             @Named("description") String description) throws GeneralSecurityException, IOException, Exception {
         DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
         String userToken = req.getHeader("Authorization").substring(7);
-
-        // https://stackoverflow.com/questions/25309464/send-image-from-android-client-to-appengine-cloud-endpoint
-
         GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(new NetHttpTransport(), new GsonFactory())
-                .setAudience(Collections
-                        .singletonList("852760108989-gqn73cl4kuk3nb5a8mgf38rgace4u3lk.apps.googleusercontent.com"))
-                .build();
+            .setAudience(Collections
+                    .singletonList("852760108989-gqn73cl4kuk3nb5a8mgf38rgace4u3lk.apps.googleusercontent.com"))
+            .build();
 
         GoogleIdToken idToken = verifier.verify(userToken);
 
@@ -139,32 +187,24 @@ public class Endpoint {
             String[] parts = imageString.split("[,]");
             imageString = parts[1];
             String fileExtension = parts[0].split("[/]")[1].split("[;]")[0];
-
             byte[] decode = Base64.getDecoder().decode(imageString);
-            InputStream is = new ByteArrayInputStream(decode);
+            //InputStream is = new ByteArrayInputStream(decode);
             /*
              * This sometimes fails for no reason, kept in case we need to re-use
              * try {
              * mimeType = URLConnection.guessContentTypeFromStream(is);
              * String delimiter="[/]";
-             * String[] tokens = mimeType.split(delimiter); //This fails if we encounter a
-             * duck. what the fuck? oh, new lines from string.
+             * String[] tokens = mimeType.split(delimiter);
              * fileExtension = tokens[1];
              * } catch (IOException ioException){
              * throw new Exception("trucs: " + fileExtension,ioException);
              * }
              */
 
-            // TODO: Définir ces trucs avec les env var de webapp\WEB-INF\appengine-web.xml
-            // The ID of your GCP project
             String projectId = "projet-tinygram-tf ";
-
-            // The ID of your GCS bucket
             String bucketName = "projet-tinygram-tf.appspot.com";
-
-            // The ID of your GCS object
-            String objectName = "random" + description + "." + fileExtension;
-            // TODO : do something actually random..
+            String objectName = userId + description + "." + fileExtension;
+            // TODO : do something other than this... but what?
 
             Storage storage = StorageOptions.newBuilder().setProjectId(projectId).build().getService();
             BlobId blobId = BlobId.of(bucketName, objectName);
@@ -179,6 +219,7 @@ public class Endpoint {
                 post.setProperty("userId", userId);
                 post.setProperty("creationDate", new SimpleDateFormat("yyyy-MM-dd hh:mm:ss").format(new Date()));
                 post.setProperty("description", description);
+                post.setProperty("likeCounter", 0);
                 datastore.put(post);
             }
             Map<String, String> map = new HashMap<String, String>();
@@ -186,26 +227,15 @@ public class Endpoint {
             return map;
         } else {
             // Cette partie du code est si le token n'est pas reconnu | est expiré
-            return Collections.singletonMap("error", "error : token unrecognized");
+            return Collections.singletonMap("error", "Invalid Token");
         }
-    }
-
-    @ApiMethod(name = "getImage", httpMethod = HttpMethod.GET, path = "getImage")
-    public List<String> getImage(HttpServletRequest req) throws GeneralSecurityException, IOException {
-        DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
-        String userToken = req.getHeader("Authorization").substring(7);
-        // https://storage.googleapis.com/BUCKET/path/to/image.jpg
-        // recuperer image depuis sa clé ou son url? url je suppose.
-
-        return Arrays.asList(
-                "TODO: return l'URL de l'image selon objet datastore");
     }
 
     @ApiMethod(name = "getPosts", httpMethod = HttpMethod.GET, path = "getPosts")
     public List<Entity> getPosts(HttpServletRequest req, @Named("filter") String filter) throws GeneralSecurityException, IOException {
         DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
         
-        if (filter == "SubbedOnly") {
+        if (filter.equals("SubbedOnly")) {
             //TODO: avec userId, recup les trucs où on est inscrit en tant que listener
             String userToken = req.getHeader("Authorization").substring(7);
             GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(new NetHttpTransport(), new GsonFactory())
@@ -214,20 +244,17 @@ public class Endpoint {
                 .build();
             GoogleIdToken idToken = verifier.verify(userToken);
 
-            Query q = new Query("Post");
+            Query q = new Query("Post").addSort("creationDate", SortDirection.DESCENDING);
             PreparedQuery pq = datastore.prepare(q);
             List<Entity> result = pq.asList(FetchOptions.Builder.withLimit(10));
             return result;
         } else {
             //Pas besoin de s'authentifier pour voir les nouveaux posts, c'est gratis
-
-            //TODO, Changer clé pour avoir ordre par date?
-            //Recupérer entité par clé est 2x plus efficace que récuperer par propriété
+            //TODO: Changer clé pour avoir ordre par date? Recupérer entité par clé est 2x plus efficace que récuperer par propriété
             Query q = new Query("Post").addSort("creationDate", SortDirection.DESCENDING);
             PreparedQuery pq = datastore.prepare(q);
             List<Entity> result = pq.asList(FetchOptions.Builder.withLimit(10));
             return result;
-
         }    
     }
         /*
@@ -254,6 +281,9 @@ public class Endpoint {
          * 
          * 
          */
+
+        //Useful things
+        //https://youtu.be/I_E6RIsa2r4 projection queries| getting only keys then querying a subset based on these
 
         // https://cloud.google.com/appengine/docs/standard/java/using-cloud-storage
         // https://cloud.google.com/storage/docs/reference/libraries#client-libraries-install-java
