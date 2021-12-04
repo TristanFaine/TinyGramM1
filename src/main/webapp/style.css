@@ -72,3 +72,8 @@ img,
 video {
   max-width: 100%;
 }
+
+ul,
+li {
+  list-style-type: none;
+}

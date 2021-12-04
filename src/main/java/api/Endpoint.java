@@ -31,6 +31,7 @@ import com.google.appengine.api.datastore.KeyFactory;
 import com.google.appengine.api.datastore.PreparedQuery;
 import com.google.appengine.api.datastore.Query;
 import com.google.appengine.api.datastore.Query.FilterOperator;
+import com.google.appengine.api.datastore.Query.SortDirection;
 import com.google.cloud.storage.Storage;
 import com.google.cloud.storage.StorageOptions;
 import com.google.cloud.storage.BlobId;
@@ -152,7 +153,7 @@ public class Endpoint {
             } catch (EntityNotFoundException e) {
                 Entity post = new Entity("Post", imageURL);
                 post.setProperty("userId", userId);
-                post.setProperty("creationDate", new SimpleDateFormat("yyyy-mm-dd hh:mm:ss").format(new Date()));
+                post.setProperty("creationDate", new SimpleDateFormat("yyyy-MM-dd hh:mm:ss").format(new Date()));
                 post.setProperty("description", description);
                 datastore.put(post);
             }
@@ -170,12 +171,41 @@ public class Endpoint {
         DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
         String userToken = req.getHeader("Authorization").substring(7);
         // https://storage.googleapis.com/BUCKET/path/to/image.jpg
-
-        return Arrays.asList(
-                "Astaghfirullah mais ton token n'est pas valide ou tu n'accorde pas les autorisations nécessaires");
-
         // recuperer image depuis sa clé ou son url? url je suppose.
 
+        return Arrays.asList(
+                "TODO: return l'URL de l'image selon objet datastore");
+    }
+
+    @ApiMethod(name = "getPosts", httpMethod = HttpMethod.GET, path = "getPosts")
+    public List<Entity> getPosts(HttpServletRequest req, @Named("filter") String filter) throws GeneralSecurityException, IOException {
+        DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
+        
+        if (filter == "SubbedOnly") {
+            //TODO: avec userId, recup les trucs où on est inscrit en tant que listener
+            String userToken = req.getHeader("Authorization").substring(7);
+            GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(new NetHttpTransport(), new GsonFactory())
+                .setAudience(Collections
+                        .singletonList("852760108989-gqn73cl4kuk3nb5a8mgf38rgace4u3lk.apps.googleusercontent.com"))
+                .build();
+            GoogleIdToken idToken = verifier.verify(userToken);
+
+            Query q = new Query("Post");
+            PreparedQuery pq = datastore.prepare(q);
+            List<Entity> result = pq.asList(FetchOptions.Builder.withLimit(10));
+            return result;
+        } else {
+            //Pas besoin de s'authentifier pour voir les nouveaux posts, c'est gratis
+
+            //TODO, Changer clé pour avoir ordre par date?
+            //Recupérer entité par clé est 2x plus efficace que récuperer par propriété
+            Query q = new Query("Post").addSort("creationDate", SortDirection.DESCENDING);
+            PreparedQuery pq = datastore.prepare(q);
+            List<Entity> result = pq.asList(FetchOptions.Builder.withLimit(10));
+            return result;
+
+        }    
+    }
         /*
          * Tests :
          * -- 1 : Peut-il obtenir le token via header Authorization? V
@@ -205,6 +235,4 @@ public class Endpoint {
         // https://cloud.google.com/storage/docs/reference/libraries#client-libraries-install-java
         // https://cloud.google.com/storage/docs/uploading-objects#storage-upload-object-java
         // https://cloud.google.com/storage/docs/downloading-objects#storage-download-object-java
-
-    }
 }

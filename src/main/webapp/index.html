@@ -17,6 +17,7 @@
         <button id="revoke-access-button" class="topnav-authOnly">Révoquer Accès </button>
         <button id="image-post-access-button" class="topnav-authOnly">Poster une image</button>
         <button id="profile-access-button" class="topnav-authOnly">Voir profil</button>
+        <button id="gram-list-access-button" class="topnav-authOnly">Voir grams</button>
     </nav>
     <div id="auth-status"></div>
     <main id="app"></main>
@@ -56,6 +57,7 @@
             document.getElementById("subscriptions-button").addEventListener("click", showSubscriptions, false);
             document.getElementById("profile-access-button").addEventListener('click', showProfile, false);
             document.getElementById("image-post-access-button").addEventListener('click', showSendImage, false);
+            document.getElementById("gram-list-access-button").addEventListener('click', showGrams, false);
         })
     }
 
@@ -96,6 +98,12 @@
                 break;
             case '/SendImage':
                 showSendImage();
+                break;
+            case '/Subscriptions':
+                showSubscriptions();
+                break;
+            case '/GramView':
+                showGrams();
                 break;
             default:
                 showHome();
@@ -146,6 +154,18 @@
             var d = GoogleAuth.currentUser.get().hasGrantedScopes(SCOPE);
         }
         m.route.set("/SendImage", {
+            authStatus: d
+        })
+    }
+
+    /**
+     * Envoie vers la page des posts, permet de filtrer tous, ou abonnements seulement
+     */
+    function showGrams() {
+        if (GoogleAuth.currentUser.get().hasGrantedScopes(SCOPE)) {
+            var d = GoogleAuth.currentUser.get().hasGrantedScopes(SCOPE);
+        }
+        m.route.set("/GramView", {
             authStatus: d
         })
     }
@@ -209,8 +229,8 @@
 <!---
 Checklist :
 - Nouveau projet dans GCP -- V
-- Utiliser datastore pour insérer/query -- ~ (on a que des user : name pour l'instant)
-- Routage/backend pour naviguer l'UI (voir tuto mithril js) -- ~ (peut-être ok?)
+- Utiliser datastore pour insérer/query -- ~ (mais est-ce-que ça scale)
+- Routage/backend pour naviguer l'UI (voir tuto mithril js) -- ~ 
 - Produire des services API test  -- V
 - Tester avec produit fourni ds cloud platform et/ou postman -- ~
 - Mettre en place google login (v2) (accés api backend java ET pour front end) -- V
@@ -219,6 +239,32 @@ Checklist :
 - Faire un feed d'actualité -- X 
 - Faire le frontend -- ~
 - Faire fichier config caché pour stocker noms url genre "/addUser", et un autre caché pour stocker nos "secrets" -- X
+-->
+
+
+<!--
+    TODO for 04/12/2021:
+    We can see our own profil,
+    We can post something
+    We must :
+    Be able to see... ten new posts I guess, regardless of subbed or not.
+    Be able to like a post
+    Be able to follow someone.
+    Be able to see the posts of those we've subbed to.
+    Which means.. either everytime someone posts, everyone that is currently subbed is added as a receiver
+    Or some other method i've forgotten the details of.
+    For now : let's do these components and underlying logic, then move on and cry when it's time to scale 
+    ShowNewPosts =>
+        Show the X new posts (let's say ten)
+        Allow someone to (try to) sub to this person
+        This implies making children component post
+    ShowSubbedPosts
+    Add like property to posts
+    Make it scale :)
+
+    Si on a le temps : Faire un composant User, qui recup infos depuis API
+    le composant Profile utilisera donc le composant User
+    User pourrait donc avoir une fonction associé loadList ou un truc du genre
 -->
 
 </html>

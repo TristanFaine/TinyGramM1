@@ -1,6 +1,6 @@
 indexes:
 - kind: User 
-  properties: # clé = id? ouais ok pour l'instant
+  properties: # clé = id Google? ouais ok pour l'instant
     - name: name
     - name: following
       direction: desc
@@ -11,4 +11,5 @@ indexes:
     - name: userId
     - name: creationDate
     - name: description
+    - name: likeCounter
 
