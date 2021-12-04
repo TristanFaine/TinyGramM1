@@ -1,46 +1,6 @@
-//Logic, allow a "view new" or "view subbed" onupdate i guess?
-
-//TODO: Ajouter les trucs dans un PostList ici, pour pouvoir les voir quand on refresh
 import Gram from "../models/Gram.js";
 var GramView = {
-    filter: "",
-    onupdate: function(vnode) {
-        document.getElementById("postViewHeader").innerHTML = ("Filtre utilisé : " + GramView.filter);
-        console.log(GramView.filter)
-            var itemList = document.getElementById("PostList")
-            while (itemList.firstChild) {
-                itemList.removeChild(itemList.lastChild);
-              }
-            for (var i=0 ; i<Gram.list.length; i++) {
-                //TODO: faire un look cool pour les composants
-                var postContainer = document.createElement("div");
-                postContainer.setAttribute("class", "postContainer");
-                
-                var imageContainer = document.createElement("img");
-                imageContainer.setAttribute("class", "imageContainer");
-                imageContainer.setAttribute("src", Gram.list[i].imageURL)
-
-                var descriptionContainer = document.createElement("div");
-                descriptionContainer.setAttribute("class", "descriptionContainer");
-                descriptionContainer.appendChild(document.createTextNode(Gram.list[i].description));
-                
-                var likeContainer = document.createElement("div");
-                likeContainer.setAttribute("class", "likeContainer");
-                likeContainer.appendChild(document.createTextNode("like : TODO"));
-
-                //todo, how to get user name from the userid?
-                //we could do an api request.. but doing an api request for each post sounds overkill
-                //Mettre un index supplémentaire "Owner|Nom" dans post risque de réduire les performances..?
-                var ownerContainer = document.createElement("div");
-                ownerContainer.setAttribute("class", "ownerContainerContainer");
-                ownerContainer.appendChild(document.createTextNode("Posted by : " + Gram.list[i].imageURL));
-
-                postContainer.appendChild(imageContainer);
-                postContainer.appendChild(descriptionContainer);
-                postContainer.appendChild(likeContainer);
-                itemList.appendChild(postContainer);
-            }
-    },
+    filter: "None",
     view: function (vnode) {
         if (vnode.attrs.authStatus === undefined || !vnode.attrs.authStatus) {
             return m("div", [
@@ -57,7 +17,7 @@ var GramView = {
             return (m("div", [
                 m("h1", {
                     id: "postViewHeader"
-                }, "Veuillez sélectionner un filtre pour voir les grams des autres :)"),
+                }, "Filtre utilisé : " + GramView.filter),
                 m("p", {
                     id: "temp"
                 }, "dsl je suis pas designer graphique"),
@@ -86,7 +46,25 @@ var GramView = {
                     }
                 },"Posts de ceux qu'on suit"),
                 m("div#PostView", [
-                    m("div#PostList")
+                    m("div#PostList", Gram.list.map(function(postData) {
+                        return m("div", {
+                            class: "postContainer"
+                        }, [
+                            m("img", {
+                                class: "imageContainer",
+                                src: postData.imageURL
+                            }),
+                            m("div", {
+                                class: "descriptionContainer"
+                            }, postData.description),
+                            m("div", {
+                                class: "likeContainer"
+                            }, postData.likeCounter),
+                            m("div", {
+                                class: "ownerContainer"
+                            }, postData.userId)
+                        ])
+                    }))
                 ])
             ]))
         }

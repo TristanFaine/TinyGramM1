@@ -237,6 +237,16 @@ public class Endpoint {
         
         if (filter.equals("SubbedOnly")) {
             //TODO: avec userId, recup les trucs où on est inscrit en tant que listener
+
+            //Récupérer les posts où on apparait en tant que listener..?
+
+            //En mieux écrit, prendre la clé userId =>
+            //Faire un query où dans chaque post, garder seulement là où on a
+            //following dans listener. Un truc projection?
+            //et pis prendre genre X posts.
+
+
+
             String userToken = req.getHeader("Authorization").substring(7);
             GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(new NetHttpTransport(), new GsonFactory())
                 .setAudience(Collections

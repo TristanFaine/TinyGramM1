@@ -17,8 +17,8 @@ var Gram = {
             var entities = data.items;
             console.log(entities)
             for (var i=0 ; i<entities.length; i++) {
-                Gram.list.push({ imageURL: entities[i].key.name, description: entities[i].properties.description,
-                     userId: entities[i].key.name})
+                Gram.list.push({imageURL: entities[i].key.name, description: entities[i].properties.description,
+                     userId: entities[i].key.name, likeCounter: entities[i].key.likeCounter})
             }
         })
     }
