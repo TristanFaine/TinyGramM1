@@ -5,7 +5,6 @@ import java.security.GeneralSecurityException;
 import java.security.SecureRandom;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
@@ -28,6 +27,7 @@ import com.google.appengine.api.datastore.FetchOptions;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
 import com.google.appengine.api.datastore.PreparedQuery;
+import com.google.appengine.api.datastore.PropertyProjection;
 import com.google.appengine.api.datastore.Query;
 import com.google.appengine.api.datastore.Query.FilterPredicate;
 import com.google.appengine.api.datastore.Query.Filter;
@@ -93,7 +93,9 @@ public class Endpoint {
 
     @ApiMethod(name = "users", httpMethod = HttpMethod.GET, path = "users")
     public List<Entity> getUsers(HttpServletRequest req) {
-        Query q = new Query("User");
+        // Optimisation requête, on veut seulement savoir les noms des utilisateurs, pas ceux qui les follow
+        Query q = new Query("User").addProjection(new PropertyProjection("name", String.class));
+
         DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
         PreparedQuery pq = datastore.prepare(q);
         List<Entity> result = pq.asList(FetchOptions.Builder.withLimit(100));
@@ -191,7 +193,6 @@ public class Endpoint {
         datastore.put(post);
 
 
-        //NOTE: let us pray this scales..
         Entity user = datastore.get(new Entity("User", userId).getKey());
         Entity postReceiver = new Entity("PostReceiver", post.getKey());
         //Définir l'ancêtre n'est pas avec methode explicite setAncestor(), mais ainsi ^
@@ -219,7 +220,7 @@ public class Endpoint {
             */
             Payload payload = idToken.getPayload();
             String userId = payload.getSubject();
-            //array is empty, try to figure out why i guess
+
             Filter equalReceiver = new FilterPredicate("receivers", FilterOperator.EQUAL, userId);
             Query q = new Query("PostReceiver").setFilter(equalReceiver).setKeysOnly();
             //On recupere toutes les clés des post receivers où l'utilisateur actuel apparaît en tant que receiver
