@@ -142,7 +142,6 @@ public class Endpoint {
         } catch (EntityNotFoundException userFollowChecked) {
             userFollowChecked.printStackTrace();
         }
-
         return Collections.singletonMap("result", "No problem");
     }
 
