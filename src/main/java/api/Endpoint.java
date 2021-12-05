@@ -25,9 +25,13 @@ import com.google.appengine.api.datastore.DatastoreServiceFactory;
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.EntityNotFoundException;
 import com.google.appengine.api.datastore.FetchOptions;
+import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
 import com.google.appengine.api.datastore.PreparedQuery;
 import com.google.appengine.api.datastore.Query;
+import com.google.appengine.api.datastore.Query.FilterPredicate;
+import com.google.appengine.api.datastore.Query.Filter;
+import com.google.appengine.api.datastore.Query.FilterOperator;
 import com.google.appengine.api.datastore.Query.SortDirection;
 import com.google.cloud.storage.Storage;
 import com.google.cloud.storage.StorageOptions;
@@ -80,7 +84,6 @@ public class Endpoint {
         } catch (EntityNotFoundException e) {
             Entity user = new Entity("User", userId);
             user.setProperty("name", payload.get("given_name") + " " + payload.get("family_name"));
-            user.setProperty("following", new HashSet<String>());
             user.setProperty("followers", new HashSet<String>());
             datastore.put(user);
         }
@@ -140,35 +143,11 @@ public class Endpoint {
             userFollowChecked.printStackTrace();
         }
 
-        /**
-         * Ajoute l'entité que souhaite follow l'utilisateur dans son champ (following)
-         */
-        try {
-            Entity userSelf = new Entity("User", userId);
-            Entity userSelfChecked = datastore.get(userSelf.getKey());
-            @SuppressWarnings("unchecked") // Cast can't verify generic type.
-            List<String> followingList = (List<String>) userSelfChecked.getProperty("following");
-            if (followingList == null) {
-                List<String> fallbackList = new ArrayList<String>();
-                fallbackList.add(followId);
-                userSelfChecked.setProperty("following", fallbackList);
-                datastore.put(userSelfChecked);
-            } else {
-                if (followingList.contains(followId)) {
-                    return Collections.singletonMap("error", "Can only be followed by someone once");
-                }
-                followingList.add(followId);
-                userSelfChecked.setProperty("following", followingList);
-                datastore.put(userSelfChecked);
-            }
-        } catch (EntityNotFoundException userSelfChecked) {
-            userSelfChecked.printStackTrace();
-        }
         return Collections.singletonMap("result", "No problem");
     }
 
-    @ApiMethod(name = "addImage", httpMethod = HttpMethod.POST, path = "addImage")
-    public Map<String, String> addImage(HttpServletRequest req, @Named("imageString") String imageString,
+    @ApiMethod(name = "addPost", httpMethod = HttpMethod.POST, path = "addPost")
+    public Map<String, String> addPost(HttpServletRequest req, @Named("imageString") String imageString,
             @Named("description") String description) throws GeneralSecurityException, IOException, Exception {
         DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
         GoogleIdToken idToken = idToken(req);
@@ -211,6 +190,19 @@ public class Endpoint {
         post.setProperty("description", description);
         post.setProperty("likeCounter", 0);
         datastore.put(post);
+
+
+        //NOTE: let us pray this scales..
+        Entity user = datastore.get(new Entity("User", userId).getKey());
+        Entity postReceiver = new Entity("PostReceiver", post.getKey());
+        //Définir l'ancêtre n'est pas avec methode explicite setAncestor(), mais ainsi ^
+        //Ajouter les followers à ce moment, en tant que receivers
+
+        @SuppressWarnings("unchecked")
+        List<String> explicitList = (List<String>) user.getProperty("followers");
+        postReceiver.setProperty("receivers", explicitList);
+        datastore.put(postReceiver);
+
         Map<String, String> map = new HashMap<String, String>();
         map.put("result", imageURL);
         return map;
@@ -221,24 +213,28 @@ public class Endpoint {
             throws GeneralSecurityException, IOException {
         DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
         if (filter.equals("SubbedOnly")) {
-            // TODO: avec userId, recup les trucs où on est inscrit en tant que listener
-
-            // Récupérer les posts où on apparait en tant que listener..?
-            // https://docs.google.com/presentation/d/1rjrl-mPkG6zUukZeE_bbA8QU7PqNWu6HHHoBF1H17dQ/edit#slide=id.p29
-            // voir aux alentours de la slide 24
-
-            // Autrement dit, prendre l'attribut userId depuis token puis
-            // faire un query où dans chaque post, garder seulement là si userId apparaît en
-            // tant que
-            // listener.
-            // et pis prendre genre X posts.
-
             GoogleIdToken idToken = idToken(req);
-
-            Query q = new Query("Post");
-            PreparedQuery pq = datastore.prepare(q);
-            List<Entity> result = pq.asList(FetchOptions.Builder.withLimit(10));
+            /*
+            if (idToken == null)
+                return Collections.singletonMap("error", "Invalid token");
+            */
+            Payload payload = idToken.getPayload();
+            String userId = payload.getSubject();
+            //array is empty, try to figure out why i guess
+            Filter equalReceiver = new FilterPredicate("receivers", FilterOperator.EQUAL, userId);
+            Query q = new Query("PostReceiver").setFilter(equalReceiver).setKeysOnly();
+            //On recupere toutes les clés des post receivers où l'utilisateur actuel apparaît en tant que receiver
+            //On peut donc pointer vers les clés parents, pour récuperer les posts.
+            List<Key> keyList = new ArrayList<Key>();
+            for (Entity childEntity : datastore.prepare(q).asIterable()) {
+                keyList.add(childEntity.getParent());
+              }
+            //On va ensuite recuperer tout les posts correspondant.
+            
+            Map<Key, Entity> postMap = datastore.get(keyList);
+            List<Entity> result = new ArrayList<Entity>(postMap.values());
             return result;
+
         } else {
             // Pas besoin de s'authentifier pour voir les nouveaux posts, la maison offre
             Query q = new Query("Post").addSort("__key__", SortDirection.DESCENDING);
@@ -247,39 +243,13 @@ public class Endpoint {
             return result;
         }
     }
-    /*
-     * Tests :
-     * -- 1 : Peut-il obtenir le token via header Authorization? V
-     * -- 2 : Peut-il lire correctement le contenu? V
-     * -- 3 : Peut-il utiliser les credentials Google correctement? V
-     * -- 4 : Peut-il se connecter datastore/cloud storage pour utiliser bucket | V
-     * pour l'écriture | V pour la lecture
-     */
 
     /*
      * Trucs à faire :
-     * Faire modèle kinds posts (id, imageURL, followedbylist)
-     * Peut-être faire un kind followedBy pour pouvoir le mettre à jour?
-     * //On suppose qu'un user peut avoir accès aux posts des gens qu'il follow
-     * //OU on suppose qu'un post est envoyè aux users inscrits
-     * //je sais plus trop c'est quoi la meilleur façon
-     * 
-     * Produire méthode : getImage | getTimeline
-     * 
-     * //propriété follow/listener sur post ou user
+     * Implémenter une méthode pour incrémenter le compteurLike d'un post
      * 
      * 
      * 
      */
 
-    // Useful things
-    // https://youtu.be/I_E6RIsa2r4 projection queries| getting only keys then
-    // querying a subset based on these
-
-    // Définir post_receiver en tant qu'enfant du kind plutot qu'en tant
-    // qu'attribut|index.. hmm..
-    // https://cloud.google.com/appengine/docs/standard/java/using-cloud-storage
-    // https://cloud.google.com/storage/docs/reference/libraries#client-libraries-install-java
-    // https://cloud.google.com/storage/docs/uploading-objects#storage-upload-object-java
-    // https://cloud.google.com/storage/docs/downloading-objects#storage-download-object-java
 }

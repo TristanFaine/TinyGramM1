@@ -12,7 +12,7 @@ function readFile() {
                 console.log(e.target.result)
                 m.request({
                     method: 'POST',
-                    url: '/_ah/api/api/v1/addImage',
+                    url: '/_ah/api/api/v1/addPost',
                     headers: {
                         "Authorization": "Bearer " + GoogleAuth.currentUser.get().getAuthResponse().id_token
                     },
