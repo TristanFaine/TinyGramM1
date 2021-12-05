@@ -11,24 +11,13 @@ var Splash = {
         },
         "Tinygram"
       ),
-      m("div", [
-        m(
-          "a",
-          {
-            href: "#!/AddUser",
-          },
-          "Ajouter un utilisateur"
-        ),
-      ]),
     ]);
   },
 };
 
 import UnknownProfile from "/../views/UnknownProfile.js";
 import Profile from "/../views/Profile.js";
-import AddUser from "/../views/AddUser.js";
 import SendImage from "/../views/SendImage.js";
-import Subscriptions from "/../views/Subscriptions.js";
 import GramView from "/../views/GramView.js";
 
 var app = document.getElementById("app");
@@ -36,7 +25,6 @@ var app = document.getElementById("app");
 //funnily enough, this should break on load since googleauth is undefined, but i suppose mithril is smart
 m.route(app, "/Splash", {
   "/Splash": Splash,
-  "/AddUser": AddUser,
   "/UnknownProfile": UnknownProfile,
   "/Profile": {
     onmatch: function () {
@@ -56,16 +44,6 @@ m.route(app, "/Splash", {
       )
         m.route.set("/Splash");
       else return SendImage;
-    },
-  },
-  "/Subscriptions": {
-    onmatch: function () {
-      if (
-        GoogleAuth.currentUser.get().hasGrantedScopes(SCOPE) === undefined ||
-        !GoogleAuth.currentUser.get().hasGrantedScopes(SCOPE)
-      )
-        m.route.set("/Splash");
-      else return Subscriptions;
     },
   },
   "/GramView": {

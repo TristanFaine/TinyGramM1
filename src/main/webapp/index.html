@@ -12,223 +12,190 @@
 <body>
     <nav class="topnav">
         <a class="active" href="#Splash">Menu Principal</a>
-        <button id="sign-in-or-out-button">Connexion/Autorisation</button>
-        <button id="subscriptions-button" class="topnav-authOnly">Abonnements</button>
-        <button id="revoke-access-button" class="topnav-authOnly">Révoquer Accès </button>
         <button id="image-post-access-button" class="topnav-authOnly">Poster une image</button>
         <button id="profile-access-button" class="topnav-authOnly">Voir profil</button>
         <button id="gram-list-access-button" class="topnav-authOnly">Voir grams</button>
+        <button id="sign-in-or-out-button">Connexion/Autorisation</button>
+
     </nav>
     <div id="auth-status"></div>
     <main id="app"></main>
-</body>
+    <script type="module" src="controller/routing.js"></script>
+    <!-- Trucs API Google login -->
+    <script>
+        var GoogleAuth
+        var SCOPE =
+            'openid https://www.googleapis.com/auth/cloud-platform https://www.googleapis.com/auth/devstorage.full_control';
 
-
-<script type="module" src="controller/routing.js"></script>
-<!-- Trucs API Google login -->
-<script>
-    var GoogleAuth
-    var SCOPE =
-        'openid https://www.googleapis.com/auth/cloud-platform https://www.googleapis.com/auth/devstorage.full_control';
-
-    function handleClientLoad() {
-        // Load the API client and auth2 library
-        gapi.load('client:auth2', initClient);
-    }
-
-    function initClient() {
-        gapi.client.init({
-            //TODO: recup les vals depuis les env var de webapp\WEB-INF\appengine-web.xml
-
-            'apiKey': 'AIzaSyDKHegSyxOiV8N-7RyKUfBL5Ks_cgoJEZA',
-            'clientId': '852760108989-gqn73cl4kuk3nb5a8mgf38rgace4u3lk.apps.googleusercontent.com',
-            'scope': SCOPE
-        }).then(function () {
-            GoogleAuth = gapi.auth2.getAuthInstance();
-            console.log("DEBUG: connected to client credential")
-            //Écoute les changement de connexion
-            GoogleAuth.isSignedIn.listen(updateSigninStatus);
-
-            //S'occupe de l'état de connexion quand on entre dans l'application
-            setSigninStatus();
-
-            document.getElementById("sign-in-or-out-button").addEventListener('click', handleAuthClick, false);
-            document.getElementById("revoke-access-button").addEventListener('click', revokeAccess, false);
-            document.getElementById("subscriptions-button").addEventListener("click", showSubscriptions, false);
-            document.getElementById("profile-access-button").addEventListener('click', showProfile, false);
-            document.getElementById("image-post-access-button").addEventListener('click', showSendImage, false);
-            document.getElementById("gram-list-access-button").addEventListener('click', showGrams, false);
-        })
-    }
-
-    function handleAuthClick() {
-        if (GoogleAuth.isSignedIn.get()) {
-            GoogleAuth.signOut();
-        } else {
-            GoogleAuth.signIn().then((user) => {
-                m.request({
-                    method: 'POST',
-                    url: '/_ah/api/api/v1/addUser',
-                    headers: {
-                        "Authorization": "Bearer " + GoogleAuth.currentUser.get().getAuthResponse()
-                            .id_token
-                    }
-                }).then(x => console.log(x))
-            });
+        function handleClientLoad() {
+            // Load the API client and auth2 library
+            gapi.load('client:auth2', initClient);
         }
-    }
 
-    function revokeAccess() {
-        GoogleAuth.disconnect();
-    }
+        function initClient() {
+            gapi.client.init({
+                //TODO: recup les vals depuis les env var de webapp\WEB-INF\appengine-web.xml
 
-    //TODO: définir ces noms de route "/X" dans un fichier config pour qu'on ait pas besoin
-    //de les réécrire parfaitement à chaque fois dans les fichiers divers
-    function routeSelect(route) {
-        switch (route) {
-            case "/splash":
-                showHome();
-                break;
-            case "/AddUser":
-                showUserInsertion();
-                break;
-            case "/UnknownProfile":
-            case '/Profile':
-                showProfile();
-                break;
-            case '/SendImage':
-                showSendImage();
-                break;
-            case '/Subscriptions':
-                showSubscriptions();
-                break;
-            case '/GramView':
-                showGrams();
-                break;
-            default:
-                showHome();
-                break;
+                'apiKey': 'AIzaSyDKHegSyxOiV8N-7RyKUfBL5Ks_cgoJEZA',
+                'clientId': '852760108989-gqn73cl4kuk3nb5a8mgf38rgace4u3lk.apps.googleusercontent.com',
+                'scope': SCOPE
+            }).then(function () {
+                GoogleAuth = gapi.auth2.getAuthInstance();
+                //Écoute les changement de connexion
+                GoogleAuth.isSignedIn.listen(updateSigninStatus);
+
+                //S'occupe de l'état de connexion quand on entre dans l'application
+                setSigninStatus();
+
+                document.getElementById("sign-in-or-out-button").addEventListener('click', handleAuthClick,
+                    false);
+                document.getElementById("profile-access-button").addEventListener('click', showProfile, false);
+                document.getElementById("image-post-access-button").addEventListener('click', showSendImage,
+                    false);
+                document.getElementById("gram-list-access-button").addEventListener('click', showGrams, false);
+            })
         }
-    }
 
-    function showHome() {
-        m.route.set("/Splash")
-    }
-
-    function showUserInsertion() {
-        m.route.set("/AddUser")
-    }
-
-    /**
-     * Envoie vers la page des abonnements, si l’utilisateur est connecté
-     */
-    function showSubscriptions() {
-        if (GoogleAuth.currentUser.get().hasGrantedScopes(SCOPE)) {
-            var d = GoogleAuth.currentUser.get().hasGrantedScopes(SCOPE);
+        function handleAuthClick() {
+            if (GoogleAuth.isSignedIn.get()) {
+                GoogleAuth.signOut();
+            } else {
+                GoogleAuth.signIn().then((user) => {
+                    m.request({
+                        method: 'POST',
+                        url: '/_ah/api/api/v1/addUser',
+                        headers: {
+                            "Authorization": "Bearer " + GoogleAuth.currentUser.get().getAuthResponse()
+                                .id_token
+                        }
+                    })
+                });
+            }
         }
-        m.route.set("/Subscriptions", {
-            authStatus: d
-        });
-    }
 
-    function showProfile() {
-        //Note: vu que les composants sont init avant la création de l'objet GoogleAuth,
-        //Il faut être sûr que à l'initialisation, même aprés condition auth / pas auth qu'il y ait pas d'accés direct à un objet défini ici.
-        //Note : techniquement, avec les nouvelles conditions de m.route(...), il n'est plus être nécessaire d'envoyer les paramétres vnode
-        if (GoogleAuth.currentUser.get().hasGrantedScopes(SCOPE)) {
-            var a = GoogleAuth.currentUser.get().getBasicProfile().getName();
-            var b = GoogleAuth.currentUser.get().getBasicProfile().getImageUrl();
-            var c = GoogleAuth.currentUser.get().getAuthResponse().id_token;
-            var d = GoogleAuth.currentUser.get().hasGrantedScopes(SCOPE);
-            m.route.set("/Profile", {
-                userName: a,
-                userImage: b,
-                userToken: c,
+        //TODO: définir ces noms de route "/X" dans un fichier config pour qu'on ait pas besoin
+        //de les réécrire parfaitement à chaque fois dans les fichiers divers
+        function routeSelect(route) {
+            switch (route) {
+                case "/splash":
+                    showHome();
+                    break;
+                case "/UnknownProfile":
+                case '/Profile':
+                    showProfile();
+                    break;
+                case '/SendImage':
+                    showSendImage();
+                    break;
+                case '/GramView':
+                    showGrams();
+                    break;
+                default:
+                    showHome();
+                    break;
+            }
+        }
+
+        function showHome() {
+            m.route.set("/Splash")
+        }
+
+        function showProfile() {
+            //Note: vu que les composants sont init avant la création de l'objet GoogleAuth,
+            //Il faut être sûr que à l'initialisation, même aprés condition auth / pas auth qu'il y ait pas d'accés direct à un objet défini ici.
+            //Note : techniquement, avec les nouvelles conditions de m.route(...), il n'est plus être nécessaire d'envoyer les paramétres vnode
+            if (GoogleAuth.currentUser.get().hasGrantedScopes(SCOPE)) {
+                var a = GoogleAuth.currentUser.get().getBasicProfile().getName();
+                var b = GoogleAuth.currentUser.get().getBasicProfile().getImageUrl();
+                var c = GoogleAuth.currentUser.get().getAuthResponse().id_token;
+                var d = GoogleAuth.currentUser.get().hasGrantedScopes(SCOPE);
+                m.route.set("/Profile", {
+                    userName: a,
+                    userImage: b,
+                    userToken: c,
+                    authStatus: d
+                })
+            } else m.route.set("/UnknownProfile")
+        }
+
+        function showSendImage() {
+            if (GoogleAuth.currentUser.get().hasGrantedScopes(SCOPE)) {
+                var d = GoogleAuth.currentUser.get().hasGrantedScopes(SCOPE);
+            }
+            m.route.set("/SendImage", {
                 authStatus: d
             })
-        } else m.route.set("/UnknownProfile")
-    }
-
-    function showSendImage() {
-        if (GoogleAuth.currentUser.get().hasGrantedScopes(SCOPE)) {
-            var d = GoogleAuth.currentUser.get().hasGrantedScopes(SCOPE);
         }
-        m.route.set("/SendImage", {
-            authStatus: d
-        })
-    }
 
-    /**
-     * Envoie vers la page des posts, permet de filtrer tous, ou abonnements seulement
-     */
-    function showGrams() {
-        if (GoogleAuth.currentUser.get().hasGrantedScopes(SCOPE)) {
-            var d = GoogleAuth.currentUser.get().hasGrantedScopes(SCOPE);
-        }
-        m.route.set("/GramView", {
-            authStatus: d
-        })
-    }
-
-    var isAuthorized; //unused for now, this doesn't even have a value on init
-    var currentApiRequest; //unused for now
-    /**
-     * Store the request details. Then check to determine whether the user
-     * has authorized the application.
-     *   - If the user has granted access, make the API request.
-     *   - If the user has not granted access, initiate the sign-in flow.
-     */
-    function sendAuthorizedApiRequest(requestDetails) {
-        currentApiRequest = requestDetails;
-        if (isAuthorized) {
-            // Make API request
-            // var gxhrgapi.client.request(requestDetails)...
-            // gxhr.then(onFulfilled, onRejected, context)...
-            // ou un truc XHR ou m.request
-
-            // Reset currentApiRequest variable.
-            currentApiRequest = {};
-        } else {
-            GoogleAuth.signIn()
-        }
-    }
-
-    function updateSigninStatus(isSignedIn) {
-        setSigninStatus();
-    }
-
-    function setSigninStatus() {
-        var user = GoogleAuth.currentUser.get();
-        var isAuthorized = user.hasGrantedScopes(SCOPE);
-        if (isAuthorized) {
-            document.getElementById("sign-in-or-out-button").innerHTML = ("Déconnexion");
-            document.querySelectorAll(".topnav-authOnly").forEach(b => {
-                b.style.display = "inline-block";
+        /**
+         * Envoie vers la page des posts, permet de filtrer tous, ou abonnements seulement
+         */
+        function showGrams() {
+            if (GoogleAuth.currentUser.get().hasGrantedScopes(SCOPE)) {
+                var d = GoogleAuth.currentUser.get().hasGrantedScopes(SCOPE);
+            }
+            m.route.set("/GramView", {
+                authStatus: d
             })
-            document.getElementById("auth-status").innerHTML = ("Connecté + permissions accordées");
-        } else {
-            document.getElementById("sign-in-or-out-button").innerHTML = ("Sign In/Authorize");
-            document.querySelectorAll(".topnav-authOnly").forEach(b => {
-                b.style.display = "none";
-            })
-            document.getElementById("auth-status").innerHTML = ("Déconnecté, ou permissions non accordées");
         }
-        //Quick and dirty routing on signin status change, but it works
-        //Note : mithril isn't loaded before this is called so everything breaks sometimes
-        //hm.
-        routeSelect(m.route.get().split('?')[0]);
-    }
-</script>
+
+        var isAuthorized; //unused for now, this doesn't even have a value on init
+        var currentApiRequest; //unused for now
+        /**
+         * Store the request details. Then check to determine whether the user
+         * has authorized the application.
+         *   - If the user has granted access, make the API request.
+         *   - If the user has not granted access, initiate the sign-in flow.
+         */
+        function sendAuthorizedApiRequest(requestDetails) {
+            currentApiRequest = requestDetails;
+            if (isAuthorized) {
+                // Make API request
+                // var gxhrgapi.client.request(requestDetails)...
+                // gxhr.then(onFulfilled, onRejected, context)...
+                // ou un truc XHR ou m.request
+
+                // Reset currentApiRequest variable.
+                currentApiRequest = {};
+            } else {
+                GoogleAuth.signIn()
+            }
+        }
+
+        function updateSigninStatus(isSignedIn) {
+            setSigninStatus();
+        }
+
+        function setSigninStatus() {
+            var user = GoogleAuth.currentUser.get();
+            var isAuthorized = user.hasGrantedScopes(SCOPE);
+            if (isAuthorized) {
+                document.getElementById("sign-in-or-out-button").innerHTML = ("Déconnexion");
+                document.querySelectorAll(".topnav-authOnly").forEach(b => {
+                    b.style.display = "inline-block";
+                })
+                document.getElementById("auth-status").innerHTML = ("Connecté + permissions accordées");
+            } else {
+                document.getElementById("sign-in-or-out-button").innerHTML = ("Connexion");
+                document.querySelectorAll(".topnav-authOnly").forEach(b => {
+                    b.style.display = "none";
+                })
+                document.getElementById("auth-status").innerHTML = ("Déconnecté, ou permissions non accordées");
+            }
+            //Quick and dirty routing on signin status change, but it works
+            //Note : mithril isn't loaded before this is called so everything breaks sometimes
+            //hm.
+            routeSelect(m.route.get().split('?')[0]);
+        }
+    </script>
+
+    <script async defer src="https://apis.google.com/js/api.js" onload="this.onload=function(){};handleClientLoad()"
+            onreadystatechange="if (this.readyState === 'complete') this.onload()">
+    </script>
 
 
 
-<script async defer src="https://apis.google.com/js/api.js" onload="this.onload=function(){};handleClientLoad()"
-        onreadystatechange="if (this.readyState === 'complete') this.onload()">
-</script>
-
-
-
-<!---
+    <!---
 Checklist :
 - Nouveau projet dans GCP -- V
 - Utiliser datastore pour insérer/query -- ~ (mais est-ce-que ça scale)
@@ -244,7 +211,7 @@ Checklist :
 -->
 
 
-<!--
+    <!--
     Ok je me rappelle comment scale (merci Maxime)
     1) Accés clé >> Accés index|property
     Autrement dit, pour la timeline, prendre "bêtement" les clés
@@ -267,5 +234,6 @@ Checklist :
     le composant Profile utilisera donc le composant User
     User pourrait donc avoir une fonction associé loadList ou un truc du genre
 -->
+</body>
 
 </html>
