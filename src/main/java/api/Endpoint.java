@@ -80,7 +80,6 @@ public class Endpoint {
         } catch (EntityNotFoundException e) {
             Entity user = new Entity("User", userId);
             user.setProperty("name", payload.get("given_name") + " " + payload.get("family_name"));
-            user.setProperty("following", new HashSet<String>());
             user.setProperty("followers", new HashSet<String>());
             datastore.put(user);
         }
@@ -138,31 +137,6 @@ public class Endpoint {
             }
         } catch (EntityNotFoundException userFollowChecked) {
             userFollowChecked.printStackTrace();
-        }
-
-        /**
-         * Ajoute l'entité que souhaite follow l'utilisateur dans son champ (following)
-         */
-        try {
-            Entity userSelf = new Entity("User", userId);
-            Entity userSelfChecked = datastore.get(userSelf.getKey());
-            @SuppressWarnings("unchecked") // Cast can't verify generic type.
-            List<String> followingList = (List<String>) userSelfChecked.getProperty("following");
-            if (followingList == null) {
-                List<String> fallbackList = new ArrayList<String>();
-                fallbackList.add(followId);
-                userSelfChecked.setProperty("following", fallbackList);
-                datastore.put(userSelfChecked);
-            } else {
-                if (followingList.contains(followId)) {
-                    return Collections.singletonMap("error", "Can only be followed by someone once");
-                }
-                followingList.add(followId);
-                userSelfChecked.setProperty("following", followingList);
-                datastore.put(userSelfChecked);
-            }
-        } catch (EntityNotFoundException userSelfChecked) {
-            userSelfChecked.printStackTrace();
         }
         return Collections.singletonMap("result", "No problem");
     }

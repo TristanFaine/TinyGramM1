@@ -2,8 +2,6 @@ indexes:
 - kind: User 
   properties: # clé = id Google? ouais ok pour l'instant
     - name: name
-    - name: following
-      direction: desc
     - name: followers
       direction: desc 
 - kind: Post
@@ -12,4 +10,7 @@ indexes:
     - name: userId
     - name: description
     - name: likeCounter
-
+- kind: PostReceiver
+  ancestor: yes
+  properties:
+    - name: receivers
