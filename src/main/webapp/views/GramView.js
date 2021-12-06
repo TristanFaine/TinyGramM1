@@ -1,6 +1,9 @@
 import Gram from "../models/Gram.js";
 var GramView = {
-  filter: "None",
+  filter: "All",
+  oncreate: () => {
+    Gram.loadList(GramView.filter);
+  },
   view: function (vnode) {
     if (vnode.attrs.authStatus === undefined || !vnode.attrs.authStatus) {
       return m("div", [
@@ -19,87 +22,73 @@ var GramView = {
           {
             id: "postViewHeader",
           },
-          "Filtre utilisé : " + GramView.filter
+          "Dernières publications"
         ),
         m(
-          "p",
+          "label",
           {
-            id: "temp",
+            for: "filter-select",
           },
-          "dsl je suis pas designer graphique"
+          "Choisir un filtre :"
         ),
-        m("nav", {class: "btn-nav"}, [
-          m(
-            "button",
-            {
-              class: "filterButton",
-              onclick: (e) => {
-                e.preventDefault();
-                e.redraw = false; //wait for events to finish before loading
-                //Ne pas autoriser à relancer la même action
-                if (GramView.filter != "All") {
-                  GramView.filter = "All";
-                  Gram.loadList(GramView.filter);
-                }
-              },
+        m(
+          "select",
+          {
+            id: "filter-select",
+            onchange: (e) => {
+              e.preventDefault();
+              e.redraw = false;
+              GramView.filter = e.target.value;
+              Gram.loadList(GramView.filter);
             },
-            "Nouveaux posts"
-          ),
-          m(
-            "button",
-            {
-              class: "filterButton",
-              onclick: (e) => {
-                e.preventDefault();
-                e.redraw = false; //wait for events to finish before loading
-                //Ne pas autoriser à relancer la même action
-                if (GramView.filter != "SubbedOnly") {
-                  GramView.filter = "SubbedOnly";
-                  Gram.loadList(GramView.filter);
-                }
-              },
-            },
-            "Posts de ceux qu'on suit"
-          ),
-        ]),
+          },
+          [
+            m("option", { value: "All" }, "Toutes"),
+            m("option", { value: "SubbedOnly" }, "Mes abonnements"),
+          ]
+        ),
         m("div#PostView", [
           m(
             "div#PostList",
-            Gram.list.map(function (postData) {
-              return m(
-                "div",
-                {
-                  class: "postContainer",
-                },
-                [
-                  m("img", {
-                    class: "imageContainer",
-                    src: postData.imageURL,
-                  }),
-                  m(
-                    "div",
-                    {
-                      class: "descriptionContainer",
-                    },
-                    postData.description
-                  ),
-                  m(
-                    "div",
-                    {
-                      class: "likeContainer",
-                    },
-                    postData.likeCounter + " likes"
-                  ),
-                  m(
-                    "div",
-                    {
-                      class: "ownerContainer",
-                    },
-                    "Posted by : " + postData.userId
-                  ),
-                ]
-              );
-            })
+            Gram.loaded
+              ? Gram.list.length
+                ? Gram.list.map((postData) =>
+                    m(
+                      "div",
+                      {
+                        class: "postContainer",
+                      },
+                      [
+                        m(
+                          "div",
+                          {
+                            class: "ownerContainer",
+                          },
+                          postData.userId
+                        ),
+                        m("img", {
+                          class: "imageContainer",
+                          src: postData.imageURL,
+                        }),
+                        m(
+                          "div",
+                          {
+                            class: "descriptionContainer",
+                          },
+                          postData.description
+                        ),
+                        m(
+                          "div",
+                          {
+                            class: "likeContainer",
+                          },
+                          postData.likeCounter + " likes"
+                        ),
+                      ]
+                    )
+                  )
+                : "🗋 Rien à afficher pour le moment..."
+              : "Chargement..."
           ),
         ]),
       ]);

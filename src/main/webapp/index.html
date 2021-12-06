@@ -176,7 +176,7 @@
             //Quick and dirty routing on signin status change, but it works
             //Note : mithril isn't loaded before this is called so everything breaks sometimes
             //hm.
-            routeSelect(m.route.get().split('?')[0]);
+            routeSelect((m.route.get() || "").split('?')[0]);
         }
     </script>
 
