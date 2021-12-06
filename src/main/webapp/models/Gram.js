@@ -14,7 +14,6 @@ var Gram = {
         filter: f,
       },
     }).then((data) => {
-      console.log(data.items);
       this.loaded = true;
       this.list = data.items.map((entity) => ({...entity.properties, key: entity.key.name}))
       console.log(this.list);

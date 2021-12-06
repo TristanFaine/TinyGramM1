@@ -103,14 +103,16 @@ var GramView = {
                                 (res) => {
                                   console.log(res);
                                   if (res.error === undefined) {
-                                    e.target.innerText ="Se désabonner"; /* Mensonger pour le moment */
+                                    postData.likeCounter +=1;
+                                    e.target.innerText ="Unlike"; /* Mensonger pour le moment */
+                                    
                                   }
                                   
                                 }
                               );
                             },
                           },
-                          postData.likeCounter + " likes"
+                          "Like"
                         ),
 
                       ]

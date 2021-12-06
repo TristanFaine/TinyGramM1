@@ -9,6 +9,7 @@ import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.TreeMap;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -32,7 +33,6 @@ import com.google.appengine.api.datastore.Query;
 import com.google.appengine.api.datastore.Query.FilterPredicate;
 import com.google.appengine.api.datastore.Query.Filter;
 import com.google.appengine.api.datastore.Query.FilterOperator;
-import com.google.appengine.api.datastore.Query.SortDirection;
 import com.google.cloud.storage.Storage;
 import com.google.cloud.storage.StorageOptions;
 import com.google.cloud.storage.BlobId;
@@ -153,6 +153,8 @@ public class Endpoint {
         DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
         GoogleIdToken idToken = idToken(req);
 
+        if (idToken == null)
+            return Collections.singletonMap("error", "Invalid Token");
 
         Payload payload = idToken.getPayload();
         String userId = payload.getSubject();
@@ -192,13 +194,9 @@ public class Endpoint {
                 randomLikeGiver.add(userId);
                 randomLikeGiverEntity.setProperty("givers", randomLikeGiver);
             datastore.put(randomLikeGiverEntity);
-        }
+        }   
 
-        
-
-        
-        return Collections.singletonMap("yay", "ok go check");
-
+        return Collections.singletonMap("success", "Like has been given");
     }
 
     @ApiMethod(name = "addPost", httpMethod = HttpMethod.POST, path = "addPost")
@@ -229,7 +227,7 @@ public class Endpoint {
             String.format("%02d", 60 - Integer.parseInt(timestamp.substring(10,12))) +
             String.format("%02d", 60 - Integer.parseInt(timestamp.substring(12,14)));
 
-        String objectName = userId + description.replaceAll("[-._~:\\/?#\\[\\]@!$&'()*+,;=%^]", "")  + "." + fileExtension;
+        String objectName = userId + description.replaceAll("[-._~:\\/?#\\[\\]@!$&'()*+,;=%^|\\r\\n|\\n|\\r|]", "")  + "." + fileExtension;
         //^ pour eviter d'avoir des trucs bizarres dans l'URL
         Storage storage = StorageOptions.newBuilder().setProjectId(projectId).build().getService();
         BlobId blobId = BlobId.of(bucketName, objectName);
@@ -296,15 +294,70 @@ public class Endpoint {
             
             //Note: postMap met tout dans le desordre.. je vois pas comment avoir autrement.. faudrait faire 1 query par clé mais ça n'a aucun sens..
             Map<Key, Entity> postMap = datastore.get(keyList);
+            TreeMap<Key,Entity> sortedMap = new TreeMap<Key, Entity>(postMap);
             //TODO :Retrier les trucs par clé car datastore.get se fait en paralléle
-            List<Entity> result = new ArrayList<Entity>(postMap.values());
+            List<Entity> result = new ArrayList<Entity>(sortedMap.values());
+            for (Entity postEntity : result) {
+                //Récuperer les enfants associé à l'entité Post actuel 
+                Query query = new Query("LikeGiver").setAncestor(postEntity.getKey());
+                PreparedQuery pq2 = datastore.prepare(query);
+                int likeCounter = 0;
+                boolean hasLiked = false;
+                for (Entity likeGiver : pq2.asIterable()) {
+                    //Faire la somme des longueurs des propriétés givers
+                    @SuppressWarnings("unchecked")
+                    ArrayList<String> giverList = (ArrayList<String>) likeGiver.getProperty("givers");
+                    if (giverList != null) {
+                        likeCounter += giverList.size();
+                        //dommage qu'on peut pas cast likeGiver en tant que HashSet, ça serait plus efficace.
+                        if (giverList.contains(userId)) {
+                            hasLiked = true;
+                        }
+                    }                    
+                }
+                //La meilleure façon de procéder est d'utiliser un DTO, plutot que d'ajouter une fausse propriété
+                postEntity.setProperty("likeCounter",likeCounter);
+                if (idToken == null)
+                    postEntity.setProperty("hasLiked", false);
+                else
+                    postEntity.setProperty("hasLiked", hasLiked);
+            }
             return result;
 
         } else {
-            // Pas besoin de s'authentifier pour voir les nouveaux posts, la maison offre
+            // Pas besoin de s'authentifier pour voir les nouveaux posts, mais on regarde quand meme si on est auth, pour avoir booleen hasLiked            
+            GoogleIdToken idToken = idToken(req);
+            Payload payload = idToken.getPayload();
+            String userId = payload.getSubject();
             Query q = new Query("Post");
+
             PreparedQuery pq = datastore.prepare(q);
-            List<Entity> result = pq.asList(FetchOptions.Builder.withLimit(10));           
+            List<Entity> result = pq.asList(FetchOptions.Builder.withLimit(10));    
+            for (Entity postEntity : result) {
+                //Récuperer les enfants associé à l'entité Post actuel 
+                Query query = new Query("LikeGiver").setAncestor(postEntity.getKey());
+                PreparedQuery pq2 = datastore.prepare(query);
+                int likeCounter = 0;
+                boolean hasLiked = false;
+                for (Entity likeGiver : pq2.asIterable()) {
+                    //Faire la somme des longueurs des propriétés givers
+                    @SuppressWarnings("unchecked")
+                    ArrayList<String> giverList = (ArrayList<String>) likeGiver.getProperty("givers");
+                    if (giverList != null) {
+                        likeCounter += giverList.size();
+                        //dommage qu'on peut pas cast likeGiver en tant que HashSet, ça serait plus efficace.
+                        if (giverList.contains(userId)) {
+                            hasLiked = true;
+                        }
+                    }                    
+                }
+                //La meilleure façon de procéder est d'utiliser un DTO, plutot que d'ajouter une fausse propriété
+                postEntity.setProperty("likeCounter",likeCounter);
+                if (idToken == null)
+                    postEntity.setProperty("hasLiked", false);
+                else
+                    postEntity.setProperty("hasLiked", hasLiked);
+            }
             return result;
         }
     }
