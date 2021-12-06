@@ -18,6 +18,7 @@ var Splash = {
 import UnknownProfile from "/../views/UnknownProfile.js";
 import Profile from "/../views/Profile.js";
 import SendImage from "/../views/SendImage.js";
+import Subscriptions from "/../views/Subscriptions.js";
 import GramView from "/../views/GramView.js";
 
 var app = document.getElementById("app");
@@ -44,6 +45,16 @@ m.route(app, "/Splash", {
       )
         m.route.set("/Splash");
       else return SendImage;
+    },
+  },
+  "/Subscriptions": {
+    onmatch: function () {
+      if (
+        GoogleAuth.currentUser.get().hasGrantedScopes(SCOPE) === undefined ||
+        !GoogleAuth.currentUser.get().hasGrantedScopes(SCOPE)
+      )
+        m.route.set("/Splash");
+      else return Subscriptions;
     },
   },
   "/GramView": {

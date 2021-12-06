@@ -1,16 +1,17 @@
 indexes:
 - kind: User 
-  properties: # clé = id Google? ouais ok pour l'instant
+  properties: # clé = id Google
     - name: name
     - name: followers
       direction: desc 
 - kind: Post
-  properties: # clé = timestamp + random letters |make likecounter and receivers children
+  properties: # clé = timestamp + lettres au hasard
     - name: imageURL
     - name: userId
     - name: description
     - name: likeCounter
-- kind: PostReceiver
-  ancestor: yes
+- kind: PostReceiver #clé = clé du parent Post
+  ancestor: yes 
   properties:
-    - name: receivers
+    - name: receivers #array pour dépasser la limite de 40k personnes 
+#^faire pareil pour likeCounter

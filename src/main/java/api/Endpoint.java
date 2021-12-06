@@ -11,7 +11,6 @@ import java.util.Map;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.HashSet;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -24,9 +23,14 @@ import com.google.appengine.api.datastore.DatastoreServiceFactory;
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.EntityNotFoundException;
 import com.google.appengine.api.datastore.FetchOptions;
+import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
 import com.google.appengine.api.datastore.PreparedQuery;
+import com.google.appengine.api.datastore.PropertyProjection;
 import com.google.appengine.api.datastore.Query;
+import com.google.appengine.api.datastore.Query.FilterPredicate;
+import com.google.appengine.api.datastore.Query.Filter;
+import com.google.appengine.api.datastore.Query.FilterOperator;
 import com.google.appengine.api.datastore.Query.SortDirection;
 import com.google.cloud.storage.Storage;
 import com.google.cloud.storage.StorageOptions;
@@ -79,7 +83,7 @@ public class Endpoint {
         } catch (EntityNotFoundException e) {
             Entity user = new Entity("User", userId);
             user.setProperty("name", payload.get("given_name") + " " + payload.get("family_name"));
-            user.setProperty("followers", new HashSet<String>());
+            user.setProperty("followers", new ArrayList<String>());
             datastore.put(user);
         }
 
@@ -88,7 +92,9 @@ public class Endpoint {
 
     @ApiMethod(name = "users", httpMethod = HttpMethod.GET, path = "users")
     public List<Entity> getUsers(HttpServletRequest req) {
-        Query q = new Query("User");
+        // Optimisation requête, on veut seulement savoir les noms des utilisateurs, pas ceux qui les follow
+        Query q = new Query("User").addProjection(new PropertyProjection("name", String.class));
+
         DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
         PreparedQuery pq = datastore.prepare(q);
         List<Entity> result = pq.asList(FetchOptions.Builder.withLimit(100));
@@ -140,8 +146,8 @@ public class Endpoint {
         return Collections.singletonMap("result", "No problem");
     }
 
-    @ApiMethod(name = "addImage", httpMethod = HttpMethod.POST, path = "addImage")
-    public Map<String, String> addImage(HttpServletRequest req, @Named("imageString") String imageString,
+    @ApiMethod(name = "addPost", httpMethod = HttpMethod.POST, path = "addPost")
+    public Map<String, String> addPost(HttpServletRequest req, @Named("imageString") String imageString,
             @Named("description") String description) throws GeneralSecurityException, IOException, Exception {
         DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
         GoogleIdToken idToken = idToken(req);
@@ -154,20 +160,28 @@ public class Endpoint {
 
         String[] parts = imageString.split("[,]");
         imageString = parts[1];
-        String fileExtension = parts[0].split("[/]")[1].split("[;]")[0];
+        String fileExtension = parts[0].split("[/]")[1].split("[;]")[0];       
         byte[] decode = Base64.getDecoder().decode(imageString);
 
         String projectId = "projet-tinygram-tf ";
         String bucketName = "projet-tinygram-tf.appspot.com";
-        String timestamp = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss").format(new Date());
-        String objectName = userId + description + "." + fileExtension;
+        String timestamp = new SimpleDateFormat("yyyyMMddhhmmss").format(new Date());
+        //customTimestamp permet d'ordonner les clés dans un ordre ascendant sans faire de tri|sort lors du query. Donc c'est plus rapide :D
+        String customTimestamp = String.format("%04d", 9999 - Integer.parseInt(timestamp.substring(0,4))) +
+            String.format("%02d", 12 - Integer.parseInt(timestamp.substring(4,6))) +
+            String.format("%02d", 31 - Integer.parseInt(timestamp.substring(6,8))) +
+            String.format("%02d", 24 - Integer.parseInt(timestamp.substring(8,10))) +
+            String.format("%02d", 60 - Integer.parseInt(timestamp.substring(10,12))) +
+            String.format("%02d", 60 - Integer.parseInt(timestamp.substring(12,14)));
 
+        String objectName = userId + description.replaceAll("[-._~:\\/?#\\[\\]@!$&'()*+,;=%^]", "")  + "." + fileExtension;
+        //^ pour eviter d'avoir des trucs bizarres dans l'URL
         Storage storage = StorageOptions.newBuilder().setProjectId(projectId).build().getService();
         BlobId blobId = BlobId.of(bucketName, objectName);
         BlobInfo blobInfo = BlobInfo.newBuilder(blobId).setContentType("image/" + fileExtension).build();
         storage.create(blobInfo, decode);
 
-        String imageURL = "http://storage.googleapis.com/" + bucketName + "/" + objectName;
+        String imageURL = "http://storage.googleapis.com/" + bucketName + "/" + objectName ;
 
         // TODO: define likecounter as a children thing
         // https://docs.google.com/presentation/d/1rjrl-mPkG6zUukZeE_bbA8QU7PqNWu6HHHoBF1H17dQ/edit#slide=id.p29
@@ -178,12 +192,24 @@ public class Endpoint {
         StringBuilder sb = new StringBuilder(26);
         for (int i = 0; i < 26; i++)
             sb.append(AB.charAt(rnd.nextInt(AB.length())));
-        Entity post = new Entity("Post", timestamp + sb.toString());
-        post.setProperty("imageURL", imageURL);
+        Entity post = new Entity("Post", customTimestamp + sb.toString());
+        post.setProperty("imageURL", imageURL); 
         post.setProperty("userId", userId);
         post.setProperty("description", description);
         post.setProperty("likeCounter", 0);
         datastore.put(post);
+
+
+        Entity user = datastore.get(new Entity("User", userId).getKey());
+        Entity postReceiver = new Entity("PostReceiver", customTimestamp + sb.toString(), post.getKey());
+        //Définir l'ancêtre n'est pas avec methode explicite setAncestor(), mais ainsi ^
+        //Ajouter les followers à ce moment, en tant que receivers
+
+        @SuppressWarnings("unchecked")
+        List<String> explicitList = (List<String>) user.getProperty("followers");
+        postReceiver.setProperty("receivers", explicitList);
+        datastore.put(postReceiver);
+
         Map<String, String> map = new HashMap<String, String>();
         map.put("result", imageURL);
         return map;
@@ -194,65 +220,44 @@ public class Endpoint {
             throws GeneralSecurityException, IOException {
         DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
         if (filter.equals("SubbedOnly")) {
-            // TODO: avec userId, recup les trucs où on est inscrit en tant que listener
-
-            // Récupérer les posts où on apparait en tant que listener..?
-            // https://docs.google.com/presentation/d/1rjrl-mPkG6zUukZeE_bbA8QU7PqNWu6HHHoBF1H17dQ/edit#slide=id.p29
-            // voir aux alentours de la slide 24
-
-            // Autrement dit, prendre l'attribut userId depuis token puis
-            // faire un query où dans chaque post, garder seulement là si userId apparaît en
-            // tant que
-            // listener.
-            // et pis prendre genre X posts.
-
             GoogleIdToken idToken = idToken(req);
+            /*
+            if (idToken == null)
+                return Collections.singletonMap("error", "Invalid token");
+            */
+            Payload payload = idToken.getPayload();
+            String userId = payload.getSubject();
 
-            Query q = new Query("Post");
-            PreparedQuery pq = datastore.prepare(q);
-            List<Entity> result = pq.asList(FetchOptions.Builder.withLimit(10));
+            Filter equalReceiver = new FilterPredicate("receivers", FilterOperator.EQUAL, userId);
+            Query q = new Query("PostReceiver").setFilter(equalReceiver).setKeysOnly();
+            //On recupere toutes les clés des post receivers où l'utilisateur actuel apparaît en tant que receiver
+            //On peut donc pointer vers les clés parents, pour récuperer les posts.
+            List<Key> keyList = new ArrayList<Key>();
+            for (Entity childEntity : datastore.prepare(q).asIterable()) {
+                keyList.add(childEntity.getParent());
+              }
+            //On va ensuite recuperer tout les posts correspondant.
+            
+            //Note: postMap met tout dans le desordre.. je vois pas comment avoir autrement.. faudrait faire 1 query par clé mais ça n'a aucun sens..
+            Map<Key, Entity> postMap = datastore.get(keyList);
+            List<Entity> result = new ArrayList<Entity>(postMap.values());
             return result;
+
         } else {
             // Pas besoin de s'authentifier pour voir les nouveaux posts, la maison offre
-            Query q = new Query("Post").addSort("__key__", SortDirection.DESCENDING);
+            Query q = new Query("Post");
             PreparedQuery pq = datastore.prepare(q);
-            List<Entity> result = pq.asList(FetchOptions.Builder.withLimit(10));
+            List<Entity> result = pq.asList(FetchOptions.Builder.withLimit(10));           
             return result;
         }
     }
-    /*
-     * Tests :
-     * -- 1 : Peut-il obtenir le token via header Authorization? V
-     * -- 2 : Peut-il lire correctement le contenu? V
-     * -- 3 : Peut-il utiliser les credentials Google correctement? V
-     * -- 4 : Peut-il se connecter datastore/cloud storage pour utiliser bucket | V
-     * pour l'écriture | V pour la lecture
-     */
 
     /*
      * Trucs à faire :
-     * Faire modèle kinds posts (id, imageURL, followedbylist)
-     * Peut-être faire un kind followedBy pour pouvoir le mettre à jour?
-     * //On suppose qu'un user peut avoir accès aux posts des gens qu'il follow
-     * //OU on suppose qu'un post est envoyè aux users inscrits
-     * //je sais plus trop c'est quoi la meilleur façon
-     * 
-     * Produire méthode : getImage | getTimeline
-     * 
-     * //propriété follow/listener sur post ou user
+     * Implémenter une méthode pour incrémenter le compteurLike d'un post
      * 
      * 
      * 
      */
 
-    // Useful things
-    // https://youtu.be/I_E6RIsa2r4 projection queries| getting only keys then
-    // querying a subset based on these
-
-    // Définir post_receiver en tant qu'enfant du kind plutot qu'en tant
-    // qu'attribut|index.. hmm..
-    // https://cloud.google.com/appengine/docs/standard/java/using-cloud-storage
-    // https://cloud.google.com/storage/docs/reference/libraries#client-libraries-install-java
-    // https://cloud.google.com/storage/docs/uploading-objects#storage-upload-object-java
-    // https://cloud.google.com/storage/docs/downloading-objects#storage-download-object-java
 }

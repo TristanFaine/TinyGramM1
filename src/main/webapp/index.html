@@ -53,6 +53,7 @@
                 document.getElementById("image-post-access-button").addEventListener('click', showSendImage,
                     false);
                 document.getElementById("gram-list-access-button").addEventListener('click', showGrams, false);
+                document.getElementById("subscriptions-button").addEventListener('click', showSubscriptions, false);
             })
         }
 
@@ -89,6 +90,9 @@
                     break;
                 case '/GramView':
                     showGrams();
+                    break;
+                    case '/Subscriptions':
+                    showSubscriptions();
                     break;
                 default:
                     showHome();
@@ -136,30 +140,16 @@
             }
             m.route.set("/GramView", {
                 authStatus: d
-            })
+            });
         }
 
-        var isAuthorized; //unused for now, this doesn't even have a value on init
-        var currentApiRequest; //unused for now
-        /**
-         * Store the request details. Then check to determine whether the user
-         * has authorized the application.
-         *   - If the user has granted access, make the API request.
-         *   - If the user has not granted access, initiate the sign-in flow.
-         */
-        function sendAuthorizedApiRequest(requestDetails) {
-            currentApiRequest = requestDetails;
-            if (isAuthorized) {
-                // Make API request
-                // var gxhrgapi.client.request(requestDetails)...
-                // gxhr.then(onFulfilled, onRejected, context)...
-                // ou un truc XHR ou m.request
-
-                // Reset currentApiRequest variable.
-                currentApiRequest = {};
-            } else {
-                GoogleAuth.signIn()
+        function showSubscriptions() {
+            if (GoogleAuth.currentUser.get().hasGrantedScopes(SCOPE)) {
+                var d = GoogleAuth.currentUser.get().hasGrantedScopes(SCOPE);
             }
+            m.route.set("/Subscriptions", {
+            authStatus: d
+            });
         }
 
         function updateSigninStatus(isSignedIn) {
@@ -233,6 +223,11 @@ Checklist :
     Si on a le temps : Faire un composant User, qui recup infos depuis API
     le composant Profile utilisera donc le composant User
     User pourrait donc avoir une fonction associé loadList ou un truc du genre
+
+
+    //ok trucs qu'on peut faire.
+    LE trie trie bien.. super
+    implémenter kind children.. je suppose?
 -->
 </body>
 
