@@ -187,48 +187,12 @@
 
 
     <!---
-Checklist :
-- Nouveau projet dans GCP -- V
-- Utiliser datastore pour insérer/query -- ~ (mais est-ce-que ça scale)
-- Routage/backend pour naviguer l'UI (voir tuto mithril js) -- ~ 
-- Produire des services API test  -- V
-- Tester avec produit fourni ds cloud platform et/ou postman -- ~
-- Mettre en place google login (v2) (accés api backend java ET pour front end) -- V
-- Produire les services API correspondant aux tâches listés dans le projet
-(profil de quelqu'un, bouton follow, faire un post, liste de nouveaux posts, post un post, like un post) -- X
-- Faire un feed d'actualité -- X 
-- Faire le frontend -- ~
-- Faire fichier config caché pour stocker noms url genre "/addUser", et un autre caché pour stocker nos "secrets" -- X
--->
-
-
-    <!--
-    Ok je me rappelle comment scale (merci Maxime)
-    1) Accés clé >> Accés index|property
-    Autrement dit, pour la timeline, prendre "bêtement" les clés
-    Donc faire en sorte que celles-ci sont triées par date
-    je crois que je l'ai déja fait?
-    Pour faire une pierre deux coups, implémenter les listeners|followers en tant qu'enfant
-
-    //https://docs.google.com/presentation/d/1rjrl-mPkG6zUukZeE_bbA8QU7PqNWu6HHHoBF1H17dQ/edit#slide=id.p29
-    //voir à partir slide 24 pour comment implémenter
-
-    //OK DONC TRUCS A FAIRE
-    Voir si notre truc trie correctement :D : V (j'ai pas vérifié tout les cas de figure)
-    Implémenter des children..?
-        LikeCounter : X
-        post.listener|receiver : X
-    Faire un truc unfollow mdr
-    
-
-    Si on a le temps : Faire un composant User, qui recup infos depuis API
-    le composant Profile utilisera donc le composant User
-    User pourrait donc avoir une fonction associé loadList ou un truc du genre
-
-
-    //ok trucs qu'on peut faire.
-    LE trie trie bien.. super
-    implémenter kind children.. je suppose?
+    Faut 1) definir un kind likeGiver : V
+    2) mettre ceux ci en tant qu'enfant du kind Post : V
+    3) Quand quelqu'un like un post, ajouter son id dans un des likeGiver : faire une methode addLike : X
+    4) quand on recup les posts, modifier le query pour obtenir 2 sous-listes, celles où l'utilisateur actuel a like ou non
+    Et ajouter une propriete "hasLiked" booleene lors du rendu pour afficher like ou non cote client.
+    6) prendre la somme des longueurs de chaque postLiker pour montrer le nombre de likes
 -->
 </body>
 

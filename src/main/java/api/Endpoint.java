@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -146,6 +147,60 @@ public class Endpoint {
         return Collections.singletonMap("result", "No problem");
     }
 
+    @ApiMethod(name = "likePost", httpMethod = HttpMethod.POST, path = "likePost")
+    public Map<String, String> likePost(HttpServletRequest req, @Named("postId") String postId)
+            throws GeneralSecurityException, IOException {
+        DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
+        GoogleIdToken idToken = idToken(req);
+
+
+        Payload payload = idToken.getPayload();
+        String userId = payload.getSubject();
+
+        //Récupérer tout les likeGivers qui ont comme ancêtre, le post en question, où l'on peut apparaître
+        Key ancestorKey = new Entity("Post", postId).getKey();
+        Filter equalGiver = new FilterPredicate("givers", FilterOperator.EQUAL, userId);
+        Query query = new Query("LikeGiver").setAncestor(ancestorKey).setFilter(equalGiver).setKeysOnly();
+        PreparedQuery pq = datastore.prepare(query);
+        List<Entity> likeList = pq.asList(FetchOptions.Builder.withDefaults());
+
+        //Voir ensuite dans cette liste d'entités si on existe en tant que giver
+        //Si le résultat n'est pas de longueur 0, alors on a déja envoyé un like, donc erreur
+        
+        if (likeList.size() > 0)
+            return Collections.singletonMap("error", "Un like par utilisateur max");
+        //Si on n'a pas encore envoyé ed like, alors selectionner une entité "au hasard" pour s'ajouter en tant que giver.
+        Query query2 = new Query("LikeGiver").setAncestor(ancestorKey);
+        PreparedQuery pq2 = datastore.prepare(query2);
+        List<Entity> likeList2 = pq2.asList(FetchOptions.Builder.withDefaults());
+        //Prendre un truc au hasard la dedans
+        Random r = new Random();
+        Entity randomLikeGiverEntity = likeList2.get(r.nextInt(likeList2.size()));
+
+        //s'ajouter en tant que giver, en creeant la property si celle-ci n'a pas encore été initialisée
+        @SuppressWarnings("unchecked")
+        List<String> randomLikeGiver = (List<String>) randomLikeGiverEntity.getProperty("givers");
+        if (randomLikeGiver == null) {
+            List<String> fallbackList = new ArrayList<String>();
+            fallbackList.add(userId);
+            randomLikeGiverEntity.setProperty("givers", fallbackList);
+            datastore.put(randomLikeGiverEntity);
+        } else {
+            if (randomLikeGiver.contains(userId)) {
+                return Collections.singletonMap("error", "Can only follow someone once");
+            } else
+                randomLikeGiver.add(userId);
+                randomLikeGiverEntity.setProperty("givers", randomLikeGiver);
+            datastore.put(randomLikeGiverEntity);
+        }
+
+        
+
+        
+        return Collections.singletonMap("yay", "ok go check");
+
+    }
+
     @ApiMethod(name = "addPost", httpMethod = HttpMethod.POST, path = "addPost")
     public Map<String, String> addPost(HttpServletRequest req, @Named("imageString") String imageString,
             @Named("description") String description) throws GeneralSecurityException, IOException, Exception {
@@ -183,8 +238,7 @@ public class Endpoint {
 
         String imageURL = "http://storage.googleapis.com/" + bucketName + "/" + objectName ;
 
-        // TODO: define likecounter as a children thing
-        // https://docs.google.com/presentation/d/1rjrl-mPkG6zUukZeE_bbA8QU7PqNWu6HHHoBF1H17dQ/edit#slide=id.p29
+        
         // voir aux alentours de la slide 24
         // String random pour différencier posts lors de la même seconde
         String AB = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
@@ -196,19 +250,21 @@ public class Endpoint {
         post.setProperty("imageURL", imageURL); 
         post.setProperty("userId", userId);
         post.setProperty("description", description);
-        post.setProperty("likeCounter", 0);
         datastore.put(post);
 
 
         Entity user = datastore.get(new Entity("User", userId).getKey());
         Entity postReceiver = new Entity("PostReceiver", customTimestamp + sb.toString(), post.getKey());
         //Définir l'ancêtre n'est pas avec methode explicite setAncestor(), mais ainsi ^
-        //Ajouter les followers à ce moment, en tant que receivers
-
         @SuppressWarnings("unchecked")
         List<String> explicitList = (List<String>) user.getProperty("followers");
-        postReceiver.setProperty("receivers", explicitList);
+        postReceiver.setProperty("receivers", explicitList); //Ajouter les followers à ce moment, en tant que receivers
+
+        Entity likeGiver = new Entity("LikeGiver", customTimestamp + sb.toString(), post.getKey());
+        likeGiver.setProperty("givers", new ArrayList<String>()); //ajouter liste vide de likers 
+
         datastore.put(postReceiver);
+        datastore.put(likeGiver);
 
         Map<String, String> map = new HashMap<String, String>();
         map.put("result", imageURL);
@@ -240,6 +296,7 @@ public class Endpoint {
             
             //Note: postMap met tout dans le desordre.. je vois pas comment avoir autrement.. faudrait faire 1 query par clé mais ça n'a aucun sens..
             Map<Key, Entity> postMap = datastore.get(keyList);
+            //TODO :Retrier les trucs par clé car datastore.get se fait en paralléle
             List<Entity> result = new ArrayList<Entity>(postMap.values());
             return result;
 

@@ -84,6 +84,35 @@ var GramView = {
                           },
                           postData.likeCounter + " likes"
                         ),
+                        m(
+                          "button",
+                          {
+                            class: "likeButton",
+                            value: postData.key,
+                            onclick: (e) => {
+                              m.request({
+                                method: "POST",
+                                url: "/_ah/api/api/v1/likePost",
+                                headers: {
+                                  "Authorization": "Bearer " + GoogleAuth.currentUser.get().getAuthResponse().id_token
+                                },
+                                params: {
+                                  postId: e.target.value,
+                                },
+                              }).then(
+                                (res) => {
+                                  console.log(res);
+                                  if (res.error === undefined) {
+                                    e.target.innerText ="Se désabonner"; /* Mensonger pour le moment */
+                                  }
+                                  
+                                }
+                              );
+                            },
+                          },
+                          postData.likeCounter + " likes"
+                        ),
+
                       ]
                     )
                   )
