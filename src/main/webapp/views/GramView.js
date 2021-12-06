@@ -63,11 +63,11 @@ var GramView = {
                       },
                       [
                         m(
-                          "div",
+                          "h2",
                           {
                             class: "ownerContainer",
                           },
-                          postData.userId
+                          postData.authorName
                         ),
                         m("img", {
                           class: "imageContainer",
@@ -97,27 +97,27 @@ var GramView = {
                                 method: "POST",
                                 url: "/_ah/api/api/v1/likePost",
                                 headers: {
-                                  "Authorization": "Bearer " + GoogleAuth.currentUser.get().getAuthResponse().id_token
+                                  Authorization:
+                                    "Bearer " +
+                                    GoogleAuth.currentUser
+                                      .get()
+                                      .getAuthResponse().id_token,
                                 },
                                 params: {
                                   postId: e.target.value,
                                 },
-                              }).then(
-                                (res) => {
-                                  console.log(res);
-                                  if (res.error === undefined) {
-                                    postData.likeCounter +=1;
-                                    e.target.innerText ="Unlike"; /* Mensonger pour le moment */
-                                    
-                                  }
-                                  
+                              }).then((res) => {
+                                console.log(res);
+                                if (res.error === undefined) {
+                                  postData.likeCounter += 1;
+                                  e.target.innerText =
+                                    "Unlike"; /* Mensonger pour le moment */
                                 }
-                              );
+                              });
                             },
                           },
                           "Like"
                         ),
-
                       ]
                     )
                   )
