@@ -10,9 +10,8 @@ indexes:
     - name: userId
     - name: description
     - name: likeCounter
-
-kind: PostReceiver: #clé = clé du parent Post
+- kind: PostReceiver #clé = clé du parent Post
   ancestor: yes 
   properties:
-    name: receivers #array pour dépasser la limite de 40k personnes 
+    - name: receivers #array pour dépasser la limite de 40k personnes 
 #^faire pareil pour likeCounter

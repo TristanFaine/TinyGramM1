@@ -11,7 +11,6 @@ import java.util.Map;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.HashSet;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -84,7 +83,7 @@ public class Endpoint {
         } catch (EntityNotFoundException e) {
             Entity user = new Entity("User", userId);
             user.setProperty("name", payload.get("given_name") + " " + payload.get("family_name"));
-            user.setProperty("followers", new HashSet<String>());
+            user.setProperty("followers", new ArrayList<String>());
             datastore.put(user);
         }
 
@@ -161,20 +160,28 @@ public class Endpoint {
 
         String[] parts = imageString.split("[,]");
         imageString = parts[1];
-        String fileExtension = parts[0].split("[/]")[1].split("[;]")[0];
+        String fileExtension = parts[0].split("[/]")[1].split("[;]")[0];       
         byte[] decode = Base64.getDecoder().decode(imageString);
 
         String projectId = "projet-tinygram-tf ";
         String bucketName = "projet-tinygram-tf.appspot.com";
-        String timestamp = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss").format(new Date());
-        String objectName = userId + description + "." + fileExtension;
+        String timestamp = new SimpleDateFormat("yyyyMMddhhmmss").format(new Date());
+        //customTimestamp permet d'ordonner les clés dans un ordre ascendant sans faire de tri|sort lors du query. Donc c'est plus rapide :D
+        String customTimestamp = String.format("%04d", 9999 - Integer.parseInt(timestamp.substring(0,4))) +
+            String.format("%02d", 12 - Integer.parseInt(timestamp.substring(4,6))) +
+            String.format("%02d", 31 - Integer.parseInt(timestamp.substring(6,8))) +
+            String.format("%02d", 24 - Integer.parseInt(timestamp.substring(8,10))) +
+            String.format("%02d", 60 - Integer.parseInt(timestamp.substring(10,12))) +
+            String.format("%02d", 60 - Integer.parseInt(timestamp.substring(12,14)));
 
+        String objectName = userId + description.replaceAll("[-._~:\\/?#\\[\\]@!$&'()*+,;=%^]", "")  + "." + fileExtension;
+        //^ pour eviter d'avoir des trucs bizarres dans l'URL
         Storage storage = StorageOptions.newBuilder().setProjectId(projectId).build().getService();
         BlobId blobId = BlobId.of(bucketName, objectName);
         BlobInfo blobInfo = BlobInfo.newBuilder(blobId).setContentType("image/" + fileExtension).build();
         storage.create(blobInfo, decode);
 
-        String imageURL = "http://storage.googleapis.com/" + bucketName + "/" + objectName;
+        String imageURL = "http://storage.googleapis.com/" + bucketName + "/" + objectName ;
 
         // TODO: define likecounter as a children thing
         // https://docs.google.com/presentation/d/1rjrl-mPkG6zUukZeE_bbA8QU7PqNWu6HHHoBF1H17dQ/edit#slide=id.p29
@@ -185,8 +192,8 @@ public class Endpoint {
         StringBuilder sb = new StringBuilder(26);
         for (int i = 0; i < 26; i++)
             sb.append(AB.charAt(rnd.nextInt(AB.length())));
-        Entity post = new Entity("Post", timestamp + sb.toString());
-        post.setProperty("imageURL", imageURL);
+        Entity post = new Entity("Post", customTimestamp + sb.toString());
+        post.setProperty("imageURL", imageURL); 
         post.setProperty("userId", userId);
         post.setProperty("description", description);
         post.setProperty("likeCounter", 0);
@@ -194,7 +201,7 @@ public class Endpoint {
 
 
         Entity user = datastore.get(new Entity("User", userId).getKey());
-        Entity postReceiver = new Entity("PostReceiver", post.getKey());
+        Entity postReceiver = new Entity("PostReceiver", customTimestamp + sb.toString(), post.getKey());
         //Définir l'ancêtre n'est pas avec methode explicite setAncestor(), mais ainsi ^
         //Ajouter les followers à ce moment, en tant que receivers
 
@@ -231,15 +238,16 @@ public class Endpoint {
               }
             //On va ensuite recuperer tout les posts correspondant.
             
+            //Note: postMap met tout dans le desordre.. je vois pas comment avoir autrement.. faudrait faire 1 query par clé mais ça n'a aucun sens..
             Map<Key, Entity> postMap = datastore.get(keyList);
             List<Entity> result = new ArrayList<Entity>(postMap.values());
             return result;
 
         } else {
             // Pas besoin de s'authentifier pour voir les nouveaux posts, la maison offre
-            Query q = new Query("Post").addSort("__key__", SortDirection.DESCENDING);
+            Query q = new Query("Post");
             PreparedQuery pq = datastore.prepare(q);
-            List<Entity> result = pq.asList(FetchOptions.Builder.withLimit(10));
+            List<Entity> result = pq.asList(FetchOptions.Builder.withLimit(10));           
             return result;
         }
     }
