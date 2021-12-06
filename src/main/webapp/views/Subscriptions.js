@@ -12,8 +12,12 @@ var Subscriptions = {
   oncreate: function (vnode) {
     m.request({
       method: "GET",
+      headers: {
+        "Authorization": "Bearer " + GoogleAuth.currentUser.get().getAuthResponse().id_token
+      },
       url: "/_ah/api/api/v1/users",
     }).then((res) => {
+      console.log(res);
       Subscriptions.users = m(
         "ul",
         { class: "Subscriptions-List" },
@@ -46,7 +50,7 @@ var Subscriptions = {
                   );
                 },
               },
-              "Suivre"
+              user.properties.hasFollowed ? "Déja suivi" : "Suivre"
             ),
           ])
         )

@@ -1,8 +1,11 @@
 import Gram from "../models/Gram.js";
 var GramView = {
   filter: "All",
+  currentCursor: "",
+  cursorAll: "",
+  cursorFollow: "",
   oncreate: () => {
-    Gram.loadList(GramView.filter);
+    Gram.loadList(GramView.filter, GramView.currentCursor);
   },
   view: function (vnode) {
     if (vnode.attrs.authStatus === undefined || !vnode.attrs.authStatus) {
@@ -39,7 +42,7 @@ var GramView = {
               e.preventDefault();
               e.redraw = false;
               GramView.filter = e.target.value;
-              Gram.loadList(GramView.filter);
+              Gram.loadList(GramView.filter, GramView.currentCursor);
             },
           },
           [

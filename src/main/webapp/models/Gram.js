@@ -1,7 +1,7 @@
 var Gram = {
   list: [],
   loaded: false,
-  loadList: function (f) {
+  loadList: function (f,c) {
     this.loaded = false; // Sans effet sur l’affichage...
     m.request({
       method: "GET",
@@ -12,6 +12,7 @@ var Gram = {
       },
       params: {
         filter: f,
+        cursor: c
       },
     }).then((data) => {
       this.loaded = true;

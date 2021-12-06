@@ -20,6 +20,7 @@ import com.google.api.server.spi.config.Api;
 import com.google.api.server.spi.config.ApiMethod;
 import com.google.api.server.spi.config.Named;
 import com.google.api.server.spi.config.ApiMethod.HttpMethod;
+import com.google.appengine.api.datastore.Cursor;
 import com.google.appengine.api.datastore.DatastoreService;
 import com.google.appengine.api.datastore.DatastoreServiceFactory;
 import com.google.appengine.api.datastore.Entity;
@@ -92,13 +93,35 @@ public class Endpoint {
     }
 
     @ApiMethod(name = "users", httpMethod = HttpMethod.GET, path = "users")
-    public List<Entity> getUsers(HttpServletRequest req) {
-        // Optimisation requête, on veut seulement savoir les noms des utilisateurs, pas ceux qui les follow
-        Query q = new Query("User").addProjection(new PropertyProjection("name", String.class));
-
+    public List<Entity> getUsers(HttpServletRequest req) throws GeneralSecurityException, IOException {
+        GoogleIdToken idToken = idToken(req);
+        Query q = new Query("User");
+        String userId = "";
+        // Optimisation requête, on veut seulement savoir les noms des utilisateurs si on est pas connecté
+        if (idToken == null)
+            q.addProjection(new PropertyProjection("name", String.class));
+        else {
+            Payload payload = idToken.getPayload();
+            userId = payload.getSubject();
+        }
         DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
         PreparedQuery pq = datastore.prepare(q);
         List<Entity> result = pq.asList(FetchOptions.Builder.withLimit(100));
+
+        //boucle optionnelle pour savoir si on follow l'utilisateur dans cette liste d'entitées
+        if (idToken != null) {
+            for (Entity postEntity : result) {        
+                @SuppressWarnings("unchecked")
+                ArrayList<String> followerList = (ArrayList<String>) postEntity.getProperty("followers");
+                if (followerList != null) {
+                    if (followerList.contains(userId)) {
+                        postEntity.setProperty("hasFollowed", true);
+                    } else {postEntity.setProperty("hasFollowed", false);}
+                } else {postEntity.setProperty("hasFollowed", false);}
+            }
+        }
+        
+        //TODO: add property hasFollowed if user has followed. yeah.
         return result;
     }
 
@@ -270,8 +293,16 @@ public class Endpoint {
     }
 
     @ApiMethod(name = "getPosts", httpMethod = HttpMethod.GET, path = "getPosts")
-    public List<Entity> getPosts(HttpServletRequest req, @Named("filter") String filter)
+    public List<Entity> getPosts(HttpServletRequest req, @Named("filter") String filter, @Named("cursor") String WebCursor)
             throws GeneralSecurityException, IOException {
+        //TODO: pagination web : 
+        //on va utiliser des curseurs de taille 10 on va dire
+        Cursor decodedCursor = Cursor.fromWebSafeString(WebCursor);
+        //si celui-ci n'existe pas. en crée un plus tard.
+        //Cursor originalCursor = preparedQuery.asQueryResultList(withLimit(20)).getCursor();
+        //String encodedCursor = original.toWebSafeString();
+        
+        //List<Entity> nextBatch = preparedQuery.asQueryResultList(withLimit(20).cursor(decodedCursor));
         DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
         if (filter.equals("SubbedOnly")) {
             GoogleIdToken idToken = idToken(req);
@@ -295,7 +326,6 @@ public class Endpoint {
             //Note: postMap met tout dans le desordre.. je vois pas comment avoir autrement.. faudrait faire 1 query par clé mais ça n'a aucun sens..
             Map<Key, Entity> postMap = datastore.get(keyList);
             TreeMap<Key,Entity> sortedMap = new TreeMap<Key, Entity>(postMap);
-            //TODO :Retrier les trucs par clé car datastore.get se fait en paralléle
             List<Entity> result = new ArrayList<Entity>(sortedMap.values());
             for (Entity postEntity : result) {
                 //Récuperer les enfants associé à l'entité Post actuel 
@@ -361,13 +391,5 @@ public class Endpoint {
             return result;
         }
     }
-
-    /*
-     * Trucs à faire :
-     * Implémenter une méthode pour incrémenter le compteurLike d'un post
-     * 
-     * 
-     * 
-     */
 
 }
