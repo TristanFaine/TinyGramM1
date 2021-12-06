@@ -31,6 +31,7 @@ import com.google.appengine.api.datastore.KeyFactory;
 import com.google.appengine.api.datastore.PreparedQuery;
 import com.google.appengine.api.datastore.PropertyProjection;
 import com.google.appengine.api.datastore.Query;
+import com.google.appengine.api.datastore.QueryResultList;
 import com.google.appengine.api.datastore.Query.FilterPredicate;
 import com.google.appengine.api.datastore.Query.Filter;
 import com.google.appengine.api.datastore.Query.FilterOperator;
@@ -106,7 +107,7 @@ public class Endpoint {
         }
         DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
         PreparedQuery pq = datastore.prepare(q);
-        List<Entity> result = pq.asList(FetchOptions.Builder.withLimit(100));
+        QueryResultList<Entity> result = pq.asQueryResultList(FetchOptions.Builder.withLimit(100));
 
         //boucle optionnelle pour savoir si on follow l'utilisateur dans cette liste d'entitées
         if (idToken != null) {
@@ -121,7 +122,6 @@ public class Endpoint {
             }
         }
         
-        //TODO: add property hasFollowed if user has followed. yeah.
         return result;
     }
 
@@ -187,7 +187,7 @@ public class Endpoint {
         Filter equalGiver = new FilterPredicate("givers", FilterOperator.EQUAL, userId);
         Query query = new Query("LikeGiver").setAncestor(ancestorKey).setFilter(equalGiver).setKeysOnly();
         PreparedQuery pq = datastore.prepare(query);
-        List<Entity> likeList = pq.asList(FetchOptions.Builder.withDefaults());
+        QueryResultList<Entity> likeList = pq.asQueryResultList(FetchOptions.Builder.withDefaults());
 
         //Voir ensuite dans cette liste d'entités si on existe en tant que giver
         //Si le résultat n'est pas de longueur 0, alors on a déja envoyé un like, donc erreur
@@ -197,7 +197,7 @@ public class Endpoint {
         //Si on n'a pas encore envoyé ed like, alors selectionner une entité "au hasard" pour s'ajouter en tant que giver.
         Query query2 = new Query("LikeGiver").setAncestor(ancestorKey);
         PreparedQuery pq2 = datastore.prepare(query2);
-        List<Entity> likeList2 = pq2.asList(FetchOptions.Builder.withDefaults());
+        QueryResultList<Entity> likeList2 = pq2.asQueryResultList(FetchOptions.Builder.withDefaults());
         //Prendre un truc au hasard la dedans
         Random r = new Random();
         Entity randomLikeGiverEntity = likeList2.get(r.nextInt(likeList2.size()));
@@ -292,17 +292,39 @@ public class Endpoint {
         return map;
     }
 
+    //Solution ultra-sale pour envoyer list<entities> et le cursor associé au query
+    public class PairCursor {
+        public final List<Entity> entities;
+        public final String cursor;
+    
+        public PairCursor(List<Entity> entities, String cursor) {
+            this.entities = entities;
+            this.cursor = cursor;
+        }
+    }
+
     @ApiMethod(name = "getPosts", httpMethod = HttpMethod.GET, path = "getPosts")
-    public List<Entity> getPosts(HttpServletRequest req, @Named("filter") String filter, @Named("cursor") String WebCursor)
+    
+    public PairCursor getPosts(HttpServletRequest req, @Named("filter") String filter, @Named("cursor") String WebCursor)
             throws GeneralSecurityException, IOException {
         //TODO: pagination web : 
-        //on va utiliser des curseurs de taille 10 on va dire
-        Cursor decodedCursor = Cursor.fromWebSafeString(WebCursor);
-        //si celui-ci n'existe pas. en crée un plus tard.
-        //Cursor originalCursor = preparedQuery.asQueryResultList(withLimit(20)).getCursor();
-        //String encodedCursor = original.toWebSafeString();
+        //Exemple d'utilisation
+        /*
+        if (WebCursor != null) {
+            On utilise le curseur dans la requete
+            QueryResultList<Entity> Batch = preparedQuery.asQueryResultList(withLimit(10).startCursor(Cursor.fromWebSafeString(WebCursor)));
+        } else {
+            On fait la requete sans curseur
+            QueryResultList<Entity> Batch = preparedQuery.asQueryResultList(withLimit(10));
+        }
+        Cursor newCursor = Batch.getCursor(); //On recupere le curseur qui pointe automatiquement vers le nv resultat
+        String encodedCursor = newCursor.toWebSafeString();
+        */
+        //ah mais attends, si on envoie une liste d'entitées, on la met où notre cursor..?
+        //faire une paire bidon allez?
+        //TODO: faire le curseur pour les posts follow
         
-        //List<Entity> nextBatch = preparedQuery.asQueryResultList(withLimit(20).cursor(decodedCursor));
+        
         DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
         if (filter.equals("SubbedOnly")) {
             GoogleIdToken idToken = idToken(req);
@@ -323,10 +345,10 @@ public class Endpoint {
               }
             //On va ensuite recuperer tout les posts correspondant.
             
-            //Note: postMap met tout dans le desordre.. je vois pas comment avoir autrement.. faudrait faire 1 query par clé mais ça n'a aucun sens..
             Map<Key, Entity> postMap = datastore.get(keyList);
             TreeMap<Key,Entity> sortedMap = new TreeMap<Key, Entity>(postMap);
             List<Entity> result = new ArrayList<Entity>(sortedMap.values());
+            
             for (Entity postEntity : result) {
                 //Récuperer les enfants associé à l'entité Post actuel 
                 Query query = new Query("LikeGiver").setAncestor(postEntity.getKey());
@@ -352,7 +374,7 @@ public class Endpoint {
                 else
                     postEntity.setProperty("hasLiked", hasLiked);
             }
-            return result;
+            return new PairCursor(result, "TODO");
 
         } else {
             // Pas besoin de s'authentifier pour voir les nouveaux posts, mais on regarde quand meme si on est auth, pour avoir booleen hasLiked            
@@ -362,7 +384,16 @@ public class Endpoint {
             Query q = new Query("Post");
 
             PreparedQuery pq = datastore.prepare(q);
-            List<Entity> result = pq.asList(FetchOptions.Builder.withLimit(10));    
+            QueryResultList<Entity> result = null;
+            if (WebCursor != null && !WebCursor.isEmpty()) {
+                //On utilise le curseur dans la requete
+                result = pq.asQueryResultList(FetchOptions.Builder.withLimit(10).startCursor(Cursor.fromWebSafeString(WebCursor)));
+            } else {
+                //On fait la requete sans curseur
+                result = pq.asQueryResultList(FetchOptions.Builder.withLimit(10));
+            }
+            Cursor newCursor = result.getCursor(); //On recupere le curseur qui pointe automatiquement vers le nv resultat
+            String encodedCursor = newCursor.toWebSafeString();   
             for (Entity postEntity : result) {
                 //Récuperer les enfants associé à l'entité Post actuel 
                 Query query = new Query("LikeGiver").setAncestor(postEntity.getKey());
@@ -388,7 +419,7 @@ public class Endpoint {
                 else
                     postEntity.setProperty("hasLiked", hasLiked);
             }
-            return result;
+            return new PairCursor(result, encodedCursor);
         }
     }
 
