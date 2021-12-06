@@ -98,27 +98,31 @@ public class Endpoint {
         GoogleIdToken idToken = idToken(req);
         Query q = new Query("User");
         String userId = "";
-        // Optimisation requête, on veut seulement savoir les noms des utilisateurs si on est pas connecté
+        // Optimisation requête, on veut seulement savoir les noms des utilisateurs si
+        // on est pas connecté
         if (idToken == null)
             q.addProjection(new PropertyProjection("name", String.class));
         else {
             Payload payload = idToken.getPayload();
             userId = payload.getSubject();
+            q.setFilter(
+                    new FilterPredicate("__key__", FilterOperator.NOT_EQUAL, KeyFactory.createKey("User", userId)));
         }
         DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
         PreparedQuery pq = datastore.prepare(q);
         QueryResultList<Entity> result = pq.asQueryResultList(FetchOptions.Builder.withLimit(100));
 
-        //boucle optionnelle pour savoir si on follow l'utilisateur dans cette liste d'entitées
+        // boucle optionnelle pour savoir si on follow l'utilisateur dans cette liste
+        // d'entitées
         if (idToken != null) {
-            for (Entity postEntity : result) {        
+            for (Entity postEntity : result) {
                 @SuppressWarnings("unchecked")
                 ArrayList<String> followerList = (ArrayList<String>) postEntity.getProperty("followers");
-                if (followerList != null) {
-                    if (followerList.contains(userId)) {
-                        postEntity.setProperty("hasFollowed", true);
-                    } else {postEntity.setProperty("hasFollowed", false);}
-                } else {postEntity.setProperty("hasFollowed", false);}
+                if (followerList != null && followerList.contains(userId)) {
+                    postEntity.setProperty("hasFollowed", true);
+                } else {
+                    postEntity.setProperty("hasFollowed", false);
+                }
             }
         }
         
@@ -182,27 +186,31 @@ public class Endpoint {
         Payload payload = idToken.getPayload();
         String userId = payload.getSubject();
 
-        //Récupérer tout les likeGivers qui ont comme ancêtre, le post en question, où l'on peut apparaître
+        // Récupérer tout les likeGivers qui ont comme ancêtre, le post en question, où
+        // l'on peut apparaître
         Key ancestorKey = new Entity("Post", postId).getKey();
         Filter equalGiver = new FilterPredicate("givers", FilterOperator.EQUAL, userId);
         Query query = new Query("LikeGiver").setAncestor(ancestorKey).setFilter(equalGiver).setKeysOnly();
         PreparedQuery pq = datastore.prepare(query);
         QueryResultList<Entity> likeList = pq.asQueryResultList(FetchOptions.Builder.withDefaults());
 
-        //Voir ensuite dans cette liste d'entités si on existe en tant que giver
-        //Si le résultat n'est pas de longueur 0, alors on a déja envoyé un like, donc erreur
-        
+        // Voir ensuite dans cette liste d'entités si on existe en tant que giver
+        // Si le résultat n'est pas de longueur 0, alors on a déja envoyé un like, donc
+        // erreur
+
         if (likeList.size() > 0)
             return Collections.singletonMap("error", "Un like par utilisateur max");
-        //Si on n'a pas encore envoyé ed like, alors selectionner une entité "au hasard" pour s'ajouter en tant que giver.
+        // Si on n'a pas encore envoyé ed like, alors selectionner une entité "au
+        // hasard" pour s'ajouter en tant que giver.
         Query query2 = new Query("LikeGiver").setAncestor(ancestorKey);
         PreparedQuery pq2 = datastore.prepare(query2);
-        QueryResultList<Entity> likeList2 = pq2.asQueryResultList(FetchOptions.Builder.withDefaults());
-        //Prendre un truc au hasard la dedans
+        List<Entity> likeList2 = pq2.asList(FetchOptions.Builder.withDefaults());
+        // Prendre un truc au hasard la dedans
         Random r = new Random();
         Entity randomLikeGiverEntity = likeList2.get(r.nextInt(likeList2.size()));
 
-        //s'ajouter en tant que giver, en creeant la property si celle-ci n'a pas encore été initialisée
+        // s'ajouter en tant que giver, en creeant la property si celle-ci n'a pas
+        // encore été initialisée
         @SuppressWarnings("unchecked")
         List<String> randomLikeGiver = (List<String>) randomLikeGiverEntity.getProperty("givers");
         if (randomLikeGiver == null) {
@@ -215,9 +223,9 @@ public class Endpoint {
                 return Collections.singletonMap("error", "Can only follow someone once");
             } else
                 randomLikeGiver.add(userId);
-                randomLikeGiverEntity.setProperty("givers", randomLikeGiver);
+            randomLikeGiverEntity.setProperty("givers", randomLikeGiver);
             datastore.put(randomLikeGiverEntity);
-        }   
+        }
 
         return Collections.singletonMap("success", "Like has been given");
     }
@@ -236,30 +244,31 @@ public class Endpoint {
 
         String[] parts = imageString.split("[,]");
         imageString = parts[1];
-        String fileExtension = parts[0].split("[/]")[1].split("[;]")[0];       
+        String fileExtension = parts[0].split("[/]")[1].split("[;]")[0];
         byte[] decode = Base64.getDecoder().decode(imageString);
 
         String projectId = "projet-tinygram-tf ";
         String bucketName = "projet-tinygram-tf.appspot.com";
         String timestamp = new SimpleDateFormat("yyyyMMddhhmmss").format(new Date());
-        //customTimestamp permet d'ordonner les clés dans un ordre ascendant sans faire de tri|sort lors du query. Donc c'est plus rapide :D
-        String customTimestamp = String.format("%04d", 9999 - Integer.parseInt(timestamp.substring(0,4))) +
-            String.format("%02d", 12 - Integer.parseInt(timestamp.substring(4,6))) +
-            String.format("%02d", 31 - Integer.parseInt(timestamp.substring(6,8))) +
-            String.format("%02d", 24 - Integer.parseInt(timestamp.substring(8,10))) +
-            String.format("%02d", 60 - Integer.parseInt(timestamp.substring(10,12))) +
-            String.format("%02d", 60 - Integer.parseInt(timestamp.substring(12,14)));
+        // customTimestamp permet d'ordonner les clés dans un ordre ascendant sans faire
+        // de tri|sort lors du query. Donc c'est plus rapide :D
+        String customTimestamp = String.format("%04d", 9999 - Integer.parseInt(timestamp.substring(0, 4))) +
+                String.format("%02d", 12 - Integer.parseInt(timestamp.substring(4, 6))) +
+                String.format("%02d", 31 - Integer.parseInt(timestamp.substring(6, 8))) +
+                String.format("%02d", 24 - Integer.parseInt(timestamp.substring(8, 10))) +
+                String.format("%02d", 60 - Integer.parseInt(timestamp.substring(10, 12))) +
+                String.format("%02d", 60 - Integer.parseInt(timestamp.substring(12, 14)));
 
-        String objectName = userId + description.replaceAll("[-._~:\\/?#\\[\\]@!$&'()*+,;=%^|\\r\\n|\\n|\\r|]", "")  + "." + fileExtension;
-        //^ pour eviter d'avoir des trucs bizarres dans l'URL
+        String objectName = userId + description.replaceAll("[-._~:\\/?#\\[\\]@!$&'()*+,;=%^|\\r\\n|\\n|\\r|]", "")
+                + "." + fileExtension;
+        // ^ pour eviter d'avoir des trucs bizarres dans l'URL
         Storage storage = StorageOptions.newBuilder().setProjectId(projectId).build().getService();
         BlobId blobId = BlobId.of(bucketName, objectName);
         BlobInfo blobInfo = BlobInfo.newBuilder(blobId).setContentType("image/" + fileExtension).build();
         storage.create(blobInfo, decode);
 
-        String imageURL = "http://storage.googleapis.com/" + bucketName + "/" + objectName ;
+        String imageURL = "http://storage.googleapis.com/" + bucketName + "/" + objectName;
 
-        
         // voir aux alentours de la slide 24
         // String random pour différencier posts lors de la même seconde
         String AB = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
@@ -268,21 +277,21 @@ public class Endpoint {
         for (int i = 0; i < 26; i++)
             sb.append(AB.charAt(rnd.nextInt(AB.length())));
         Entity post = new Entity("Post", customTimestamp + sb.toString());
-        post.setProperty("imageURL", imageURL); 
+        post.setProperty("imageURL", imageURL);
         post.setProperty("userId", userId);
         post.setProperty("description", description);
         datastore.put(post);
 
-
         Entity user = datastore.get(new Entity("User", userId).getKey());
         Entity postReceiver = new Entity("PostReceiver", customTimestamp + sb.toString(), post.getKey());
-        //Définir l'ancêtre n'est pas avec methode explicite setAncestor(), mais ainsi ^
+        // Définir l'ancêtre n'est pas avec methode explicite setAncestor(), mais ainsi
+        // ^
         @SuppressWarnings("unchecked")
         List<String> explicitList = (List<String>) user.getProperty("followers");
-        postReceiver.setProperty("receivers", explicitList); //Ajouter les followers à ce moment, en tant que receivers
+        postReceiver.setProperty("receivers", explicitList); // Ajouter les followers à ce moment, en tant que receivers
 
         Entity likeGiver = new Entity("LikeGiver", customTimestamp + sb.toString(), post.getKey());
-        likeGiver.setProperty("givers", new ArrayList<String>()); //ajouter liste vide de likers 
+        likeGiver.setProperty("givers", new ArrayList<String>()); // ajouter liste vide de likers
 
         datastore.put(postReceiver);
         datastore.put(likeGiver);
@@ -305,7 +314,8 @@ public class Endpoint {
 
     @ApiMethod(name = "getPosts", httpMethod = HttpMethod.GET, path = "getPosts")
     
-    public PairCursor getPosts(HttpServletRequest req, @Named("filter") String filter, @Named("cursor") String WebCursor)
+    public PairCursor getPosts(HttpServletRequest req, @Named("filter") String filter,
+            @Named("cursor") String WebCursor)
             throws GeneralSecurityException, IOException {
         //TODO: pagination web : 
         //Exemple d'utilisation
@@ -329,16 +339,17 @@ public class Endpoint {
         if (filter.equals("SubbedOnly")) {
             GoogleIdToken idToken = idToken(req);
             /*
-            if (idToken == null)
-                return Collections.singletonMap("error", "Invalid token");
-            */
+             * if (idToken == null)
+             * return Collections.singletonMap("error", "Invalid token");
+             */
             Payload payload = idToken.getPayload();
             String userId = payload.getSubject();
 
             Filter equalReceiver = new FilterPredicate("receivers", FilterOperator.EQUAL, userId);
             Query q = new Query("PostReceiver").setFilter(equalReceiver).setKeysOnly();
-            //On recupere toutes les clés des post receivers où l'utilisateur actuel apparaît en tant que receiver
-            //On peut donc pointer vers les clés parents, pour récuperer les posts.
+            // On recupere toutes les clés des post receivers où l'utilisateur actuel
+            // apparaît en tant que receiver
+            // On peut donc pointer vers les clés parents, pour récuperer les posts.
             List<Key> keyList = new ArrayList<Key>();
             for (Entity childEntity : datastore.prepare(q).asIterable()) {
                 keyList.add(childEntity.getParent());
@@ -350,25 +361,27 @@ public class Endpoint {
             List<Entity> result = new ArrayList<Entity>(sortedMap.values());
             
             for (Entity postEntity : result) {
-                //Récuperer les enfants associé à l'entité Post actuel 
+                // Récuperer les enfants associé à l'entité Post actuel
                 Query query = new Query("LikeGiver").setAncestor(postEntity.getKey());
                 PreparedQuery pq2 = datastore.prepare(query);
                 int likeCounter = 0;
                 boolean hasLiked = false;
                 for (Entity likeGiver : pq2.asIterable()) {
-                    //Faire la somme des longueurs des propriétés givers
+                    // Faire la somme des longueurs des propriétés givers
                     @SuppressWarnings("unchecked")
                     ArrayList<String> giverList = (ArrayList<String>) likeGiver.getProperty("givers");
                     if (giverList != null) {
                         likeCounter += giverList.size();
-                        //dommage qu'on peut pas cast likeGiver en tant que HashSet, ça serait plus efficace.
+                        // dommage qu'on peut pas cast likeGiver en tant que HashSet, ça serait plus
+                        // efficace.
                         if (giverList.contains(userId)) {
                             hasLiked = true;
                         }
-                    }                    
+                    }
                 }
-                //La meilleure façon de procéder est d'utiliser un DTO, plutot que d'ajouter une fausse propriété
-                postEntity.setProperty("likeCounter",likeCounter);
+                // La meilleure façon de procéder est d'utiliser un DTO, plutot que d'ajouter
+                // une fausse propriété
+                postEntity.setProperty("likeCounter", likeCounter);
                 if (idToken == null)
                     postEntity.setProperty("hasLiked", false);
                 else
@@ -377,7 +390,8 @@ public class Endpoint {
             return new PairCursor(result, "TODO");
 
         } else {
-            // Pas besoin de s'authentifier pour voir les nouveaux posts, mais on regarde quand meme si on est auth, pour avoir booleen hasLiked            
+            // Pas besoin de s'authentifier pour voir les nouveaux posts, mais on regarde
+            // quand meme si on est auth, pour avoir booleen hasLiked
             GoogleIdToken idToken = idToken(req);
             Payload payload = idToken.getPayload();
             String userId = payload.getSubject();
@@ -395,29 +409,42 @@ public class Endpoint {
             Cursor newCursor = result.getCursor(); //On recupere le curseur qui pointe automatiquement vers le nv resultat
             String encodedCursor = newCursor.toWebSafeString();   
             for (Entity postEntity : result) {
-                //Récuperer les enfants associé à l'entité Post actuel 
+                // Récuperer les enfants associé à l'entité Post actuel
                 Query query = new Query("LikeGiver").setAncestor(postEntity.getKey());
                 PreparedQuery pq2 = datastore.prepare(query);
                 int likeCounter = 0;
                 boolean hasLiked = false;
                 for (Entity likeGiver : pq2.asIterable()) {
-                    //Faire la somme des longueurs des propriétés givers
+                    // Faire la somme des longueurs des propriétés givers
                     @SuppressWarnings("unchecked")
                     ArrayList<String> giverList = (ArrayList<String>) likeGiver.getProperty("givers");
                     if (giverList != null) {
                         likeCounter += giverList.size();
-                        //dommage qu'on peut pas cast likeGiver en tant que HashSet, ça serait plus efficace.
+                        // dommage qu'on peut pas cast likeGiver en tant que HashSet, ça serait plus
+                        // efficace.
                         if (giverList.contains(userId)) {
                             hasLiked = true;
                         }
-                    }                    
+                    }
                 }
-                //La meilleure façon de procéder est d'utiliser un DTO, plutot que d'ajouter une fausse propriété
-                postEntity.setProperty("likeCounter",likeCounter);
+                // La meilleure façon de procéder est d'utiliser un DTO, plutot que d'ajouter
+                // une fausse propriété
+                postEntity.setProperty("likeCounter", likeCounter);
                 if (idToken == null)
                     postEntity.setProperty("hasLiked", false);
                 else
                     postEntity.setProperty("hasLiked", hasLiked);
+
+                // On récupère les noms des auteurs
+                String authorName;
+                try {
+                    authorName = (String) datastore.get(KeyFactory.createKey(
+                            "User",
+                            (String) postEntity.getProperty("userId"))).getProperty("name");
+                } catch (EntityNotFoundException e) {
+                    authorName = "Anonyme";
+                }
+                postEntity.setProperty("authorName", authorName);
             }
             return new PairCursor(result, encodedCursor);
         }
