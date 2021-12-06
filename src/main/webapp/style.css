@@ -24,17 +24,25 @@ body > * {
   margin: 1em 0;
 }
 
-.topnav {
-  position: sticky;
-  top: 0;
-  z-index: 1;
+.topnav,
+.btn-nav {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   gap: 1ex;
 }
 
+.topnav {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
 .topnav-authOnly {
+  display: none;
+}
+
+#auth-status {
   display: none;
 }
 
@@ -76,4 +84,27 @@ video {
 ul,
 li {
   list-style-type: none;
+}
+
+/* Éléments de formulaire */
+label,
+textarea,
+input {
+  margin: 1ex;
+}
+label {
+  font-style: italic;
+}
+textarea {
+  display: block;
+  font-family: inherit;
+  padding: 1ex;
+  border-radius: 3px;
+  width: calc(100% - 2ex);
+}
+input[type="file"] {
+  display: block;
+  border-radius: 3px;
+  background-color: #dbdbdb;
+  cursor: pointer;
 }
