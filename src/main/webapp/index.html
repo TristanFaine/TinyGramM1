@@ -14,9 +14,9 @@
         <a class="active" href="#Splash">Menu Principal</a>
         <button id="image-post-access-button" class="topnav-authOnly">Poster une image</button>
         <button id="gram-list-access-button" class="topnav-authOnly">Voir grams</button>
+        <button id="subscriptions-button" class="topnav-authOnly">Abonnements</button>
         <button id="profile-access-button" class="topnav-authOnly">Voir profil</button>
         <button id="sign-in-or-out-button">Connexion/Autorisation</button>
-
     </nav>
     <div id="auth-status"></div>
     <main id="app"></main>
@@ -53,7 +53,8 @@
                 document.getElementById("image-post-access-button").addEventListener('click', showSendImage,
                     false);
                 document.getElementById("gram-list-access-button").addEventListener('click', showGrams, false);
-                document.getElementById("subscriptions-button").addEventListener('click', showSubscriptions, false);
+                document.getElementById("subscriptions-button").addEventListener('click', showSubscriptions,
+                    false);
             })
         }
 
@@ -91,7 +92,7 @@
                 case '/GramView':
                     showGrams();
                     break;
-                    case '/Subscriptions':
+                case '/Subscriptions':
                     showSubscriptions();
                     break;
                 default:
@@ -148,7 +149,7 @@
                 var d = GoogleAuth.currentUser.get().hasGrantedScopes(SCOPE);
             }
             m.route.set("/Subscriptions", {
-            authStatus: d
+                authStatus: d
             });
         }
 
