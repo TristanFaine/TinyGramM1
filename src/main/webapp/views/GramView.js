@@ -1,18 +1,14 @@
 import Gram from "../models/Gram.js";
+//TODO: liste pour selectionner la page, selon le nombre de curseurs dispos.
 var GramView = {
   filter: "All",
   currentCursorList: ["",""],
-  cursorListAll: ["",""], //TODO :simuler "page précédente" ou selection pages via une liste d'anciens curseurs
+  cursorListAll: ["",""],
   cursorListFollow: ["",""],
   currentPageNumber: 0,
   pageNumberAll: 0,
   pageNumberFollow: 0,
-  //TODO:bouton "page suivante" et bouton "reset pagination"
-  //Logique de traitement : utiliser la numerotation de page pour selectionner le cursor à utiliser.
-  //Si taille < 10 alors ne pas afficher pageSuivante
-  //did I break everything? oopsies.
   oncreate: () => {
-    //load special où on change pas le curseur, mais il faut quand meme recup la valeur du curseur lors de la premiere init
     Gram.loadList(GramView.filter, GramView.currentCursorList[GramView.currentPageNumber]).then(function() {
       if (GramView.filter == "All") {
         GramView.currentCursorList[GramView.currentPageNumber+1] = Gram.cursor;
@@ -21,7 +17,6 @@ var GramView = {
         GramView.currentCursorList[GramView.currentPageNumber+1] = Gram.cursor;
         GramView.cursorListFollow[GramView.currentPageNumber+1] = Gram.cursor;
       }
-      document.getElementById("nextPageButton").value = Gram.cursor;
     })
   },
   view: function (vnode) {
@@ -53,7 +48,7 @@ var GramView = {
               e.preventDefault();
               e.redraw = false;
               if (!Gram.limitReached) { //Afficher page suivante seulement si cela est possible.
-                //Donner page suivante, donc incrémenter le compteur, et insérer un nouveau curseur
+                //Donner page suivante, et donc insérer un nouveau curseur
                 Gram.loadList(GramView.filter, e.target.value).then(function() {
                   if (GramView.filter == "All") {
                     GramView.currentCursorList[GramView.currentPageNumber + 2] = Gram.cursor;
@@ -96,11 +91,50 @@ var GramView = {
           "Page Précédente"
         ),
         m(
+          "label",
+          {
+            for: "page-select",
+          },
+          "Sélectionner une page de résultats:"
+        ),
+        m(
+          "select",
+          {
+            id: "page-select",
+            onchange: (e) => {
+              e.preventDefault();
+              e.redraw = false;
+              GramView.currentPageNumber = parseInt(e.target.value);
+              console.log(e.target.value);
+              if (GramView.filter == "All") {
+                GramView.pageNumberAll = GramView.currentPageNumber;
+              } else {
+                GramView.pageNumberFollow = GramView.currentPageNumber;
+              }
+              //On change de mode, donc changer la liste de curseurs, ainsi que le numero de page
+              //Cependant, ne pas incrementer ces valeurs.
+              Gram.loadList(GramView.filter, GramView.currentCursorList[GramView.currentPageNumber]).then(function() {
+                if (GramView.filter == "All") {
+                  GramView.currentCursorList[GramView.currentPageNumber+1] = Gram.cursor;
+                  GramView.cursorListAll[GramView.currentPageNumber+1] = Gram.cursor;
+                } else {
+                  GramView.currentCursorList[GramView.currentPageNumber+1] = Gram.cursor;
+                  GramView.cursorListFollow[GramView.currentPageNumber+1] = Gram.cursor;
+                }
+              })
+            },
+          },
+          //Affiche les pages disponibles.
+          //ok faut que j'ai un maxPageNumber alors
+          //why does it not reverse... reeee..
+          [...Array(GramView.currentPageNumber+1).keys()].reverse().map((i) => (m("option", { value: i}, "Page : " + (i+1))))
+        ),
+        m(
           "h2",
           {
             id: "pageNumberCounter",
           },
-          "Numéro de la page : " + (GramView.currentPageNumber + 1) + "en vrai c'est " + GramView.currentPageNumber
+          "Numéro de la page : " + (GramView.currentPageNumber + 1) + (Gram.limitReached ? " (limite atteinte)" : "")
         ),
         m(
           "label",
@@ -134,11 +168,11 @@ var GramView = {
                   GramView.currentCursorList[GramView.currentPageNumber+1] = Gram.cursor;
                   GramView.cursorListFollow[GramView.currentPageNumber+1] = Gram.cursor;
                 }
-                document.getElementById("nextPageButton").value = Gram.cursor;
               })
             },
           },
           [
+            m("option", { disabled:true, selected:true, value:true }, "-- Sélectionner un filtre --"),
             m("option", { value: "All" }, "Toutes"),
             m("option", { value: "SubbedOnly" }, "Mes abonnements"),
           ]
