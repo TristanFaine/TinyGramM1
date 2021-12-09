@@ -142,7 +142,7 @@ var GramView = {
           {
             for: "filter-select",
           },
-          "Choisir un filtre :"
+          "Choisir un filtre :"
         ),
         m(
           "select",
