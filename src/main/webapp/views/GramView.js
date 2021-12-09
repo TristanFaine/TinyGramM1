@@ -127,6 +127,7 @@ var GramView = {
           //Affiche les pages disponibles.
           //ok faut que j'ai un maxPageNumber alors
           //why does it not reverse... reeee..
+          m("option", { disabled:true, selected:true, value:true }, "-- Sélectionner une page --"),
           [...Array(GramView.currentPageNumber+1).keys()].reverse().map((i) => (m("option", { value: i}, "Page : " + (i+1))))
         ),
         m(

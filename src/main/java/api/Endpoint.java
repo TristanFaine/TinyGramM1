@@ -197,10 +197,9 @@ public class Endpoint {
         // Voir ensuite dans cette liste d'entités si on existe en tant que giver
         // Si le résultat n'est pas de longueur 0, alors on a déja envoyé un like, donc
         // erreur
-
         if (likeList.size() > 0)
             return Collections.singletonMap("error", "Un like par utilisateur max");
-        // Si on n'a pas encore envoyé ed like, alors selectionner une entité "au
+        // Si on n'a pas encore envoyé de like, alors selectionner une entité "au
         // hasard" pour s'ajouter en tant que giver.
         Query query2 = new Query("LikeGiver").setAncestor(ancestorKey);
         PreparedQuery pq2 = datastore.prepare(query2);
@@ -269,7 +268,6 @@ public class Endpoint {
 
         String imageURL = "http://storage.googleapis.com/" + bucketName + "/" + objectName;
 
-        // voir aux alentours de la slide 24
         // String random pour différencier posts lors de la même seconde
         String AB = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
         SecureRandom rnd = new SecureRandom();
@@ -284,8 +282,7 @@ public class Endpoint {
 
         Entity user = datastore.get(new Entity("User", userId).getKey());
         Entity postReceiver = new Entity("PostReceiver", customTimestamp + sb.toString(), post.getKey());
-        // Définir l'ancêtre n'est pas avec methode explicite setAncestor(), mais ainsi
-        // ^
+        // Définir l'ancêtre n'est pas avec methode explicite setAncestor(), mais en troisieme position de l'entité
         @SuppressWarnings("unchecked")
         List<String> explicitList = (List<String>) user.getProperty("followers");
         postReceiver.setProperty("receivers", explicitList); // Ajouter les followers à ce moment, en tant que receivers
@@ -317,24 +314,6 @@ public class Endpoint {
     public PairCursor getPosts(HttpServletRequest req, @Named("filter") String filter,
             @Named("cursor") String WebCursor)
             throws GeneralSecurityException, IOException {
-        //TODO: pagination web : 
-        //Exemple d'utilisation
-        /*
-        if (WebCursor != null) {
-            On utilise le curseur dans la requete
-            QueryResultList<Entity> Batch = preparedQuery.asQueryResultList(withLimit(10).startCursor(Cursor.fromWebSafeString(WebCursor)));
-        } else {
-            On fait la requete sans curseur
-            QueryResultList<Entity> Batch = preparedQuery.asQueryResultList(withLimit(10));
-        }
-        Cursor newCursor = Batch.getCursor(); //On recupere le curseur qui pointe automatiquement vers le nv resultat
-        String encodedCursor = newCursor.toWebSafeString();
-        */
-        //ah mais attends, si on envoie une liste d'entitées, on la met où notre cursor..?
-        //faire une paire bidon allez?
-        //TODO: faire le curseur pour les posts follow
-        
-        
         DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
         if (filter.equals("SubbedOnly")) {
             GoogleIdToken idToken = idToken(req);
@@ -344,22 +323,31 @@ public class Endpoint {
              */
             Payload payload = idToken.getPayload();
             String userId = payload.getSubject();
-
             Filter equalReceiver = new FilterPredicate("receivers", FilterOperator.EQUAL, userId);
             Query q = new Query("PostReceiver").setFilter(equalReceiver).setKeysOnly();
+            PreparedQuery pq = datastore.prepare(q);
+            QueryResultList<Entity> querypart = null;
+            if (WebCursor != null && !WebCursor.isEmpty()) {
+                //On utilise le curseur dans la requete
+                querypart = pq.asQueryResultList(FetchOptions.Builder.withLimit(10).startCursor(Cursor.fromWebSafeString(WebCursor)));
+            } else {
+                //On fait la requete sans curseur
+                querypart = pq.asQueryResultList(FetchOptions.Builder.withLimit(10));
+            }
+            Cursor newCursor = querypart.getCursor(); //On recupere le curseur qui pointe automatiquement vers le nv resultat
+            String encodedCursor = newCursor.toWebSafeString();   
+           
             // On recupere toutes les clés des post receivers où l'utilisateur actuel
             // apparaît en tant que receiver
             // On peut donc pointer vers les clés parents, pour récuperer les posts.
             List<Key> keyList = new ArrayList<Key>();
-            for (Entity childEntity : datastore.prepare(q).asIterable()) {
+            for (Entity childEntity : querypart) {
                 keyList.add(childEntity.getParent());
-              }
+            }
             //On va ensuite recuperer tout les posts correspondant.
-            
             Map<Key, Entity> postMap = datastore.get(keyList);
             TreeMap<Key,Entity> sortedMap = new TreeMap<Key, Entity>(postMap);
             List<Entity> result = new ArrayList<Entity>(sortedMap.values());
-            
             for (Entity postEntity : result) {
                 // Récuperer les enfants associé à l'entité Post actuel
                 Query query = new Query("LikeGiver").setAncestor(postEntity.getKey());
@@ -386,8 +374,19 @@ public class Endpoint {
                     postEntity.setProperty("hasLiked", false);
                 else
                     postEntity.setProperty("hasLiked", hasLiked);
+                    
+                // On récupère les noms des auteurs
+                String authorName;
+                try {
+                    authorName = (String) datastore.get(KeyFactory.createKey(
+                            "User",
+                            (String) postEntity.getProperty("userId"))).getProperty("name");
+                } catch (EntityNotFoundException e) {
+                    authorName = "Anonyme";
+                }
+                postEntity.setProperty("authorName", authorName);
             }
-            return new PairCursor(result, "TODO");
+            return new PairCursor(result, encodedCursor);
 
         } else {
             // Pas besoin de s'authentifier pour voir les nouveaux posts, mais on regarde
@@ -409,7 +408,7 @@ public class Endpoint {
             Cursor newCursor = result.getCursor(); //On recupere le curseur qui pointe automatiquement vers le nv resultat
             String encodedCursor = newCursor.toWebSafeString();   
             for (Entity postEntity : result) {
-                // Récuperer les enfants associé à l'entité Post actuel
+                // Récuperer les enfants associé à l'entité Post actuel pour avoir le nombre de likes
                 Query query = new Query("LikeGiver").setAncestor(postEntity.getKey());
                 PreparedQuery pq2 = datastore.prepare(query);
                 int likeCounter = 0;
