@@ -2,22 +2,27 @@ import Gram from "../models/Gram.js";
 //TODO: liste pour selectionner la page, selon le nombre de curseurs dispos.
 var GramView = {
   filter: "All",
-  currentCursorList: ["",""],
-  cursorListAll: ["",""],
-  cursorListFollow: ["",""],
+  currentCursorList: ["", ""],
+  cursorListAll: ["", ""],
+  cursorListFollow: ["", ""],
   currentPageNumber: 0,
   pageNumberAll: 0,
   pageNumberFollow: 0,
   oncreate: () => {
-    Gram.loadList(GramView.filter, GramView.currentCursorList[GramView.currentPageNumber]).then(function() {
+    Gram.loadList(
+      GramView.filter,
+      GramView.currentCursorList[GramView.currentPageNumber]
+    ).then(function () {
       if (GramView.filter == "All") {
-        GramView.currentCursorList[GramView.currentPageNumber+1] = Gram.cursor;
-        GramView.cursorListAll[GramView.currentPageNumber+1] = Gram.cursor;
+        GramView.currentCursorList[GramView.currentPageNumber + 1] =
+          Gram.cursor;
+        GramView.cursorListAll[GramView.currentPageNumber + 1] = Gram.cursor;
       } else {
-        GramView.currentCursorList[GramView.currentPageNumber+1] = Gram.cursor;
-        GramView.cursorListFollow[GramView.currentPageNumber+1] = Gram.cursor;
+        GramView.currentCursorList[GramView.currentPageNumber + 1] =
+          Gram.cursor;
+        GramView.cursorListFollow[GramView.currentPageNumber + 1] = Gram.cursor;
       }
-    })
+    });
   },
   view: function (vnode) {
     if (vnode.attrs.authStatus === undefined || !vnode.attrs.authStatus) {
@@ -43,26 +48,37 @@ var GramView = {
           "button",
           {
             id: "nextPageButton",
-            value: GramView.currentCursorList[GramView.currentPageNumber+1],
+            value: GramView.currentCursorList[GramView.currentPageNumber + 1],
+            style: "float:right",
             onclick: (e) => {
               e.preventDefault();
               e.redraw = false;
-              if (!Gram.limitReached) { //Afficher page suivante seulement si cela est possible.
+              if (!Gram.limitReached) {
+                //Afficher page suivante seulement si cela est possible.
                 //Donner page suivante, et donc insérer un nouveau curseur
-                Gram.loadList(GramView.filter, e.target.value).then(function() {
-                  if (GramView.filter == "All") {
-                    GramView.currentCursorList[GramView.currentPageNumber + 2] = Gram.cursor;
-                    GramView.cursorListAll[GramView.currentPageNumber + 2] = Gram.cursor;
-                    GramView.pageNumberAll +=1;
-                  } else {
-                    GramView.currentCursorList[GramView.currentPageNumber + 2] = Gram.cursor;
-                    GramView.cursorListFollow[GramView.currentPageNumber + 2] = Gram.cursor;
-                    GramView.pageNumberFollow +=1;
+                Gram.loadList(GramView.filter, e.target.value).then(
+                  function () {
+                    if (GramView.filter == "All") {
+                      GramView.currentCursorList[
+                        GramView.currentPageNumber + 2
+                      ] = Gram.cursor;
+                      GramView.cursorListAll[GramView.currentPageNumber + 2] =
+                        Gram.cursor;
+                      GramView.pageNumberAll += 1;
+                    } else {
+                      GramView.currentCursorList[
+                        GramView.currentPageNumber + 2
+                      ] = Gram.cursor;
+                      GramView.cursorListFollow[
+                        GramView.currentPageNumber + 2
+                      ] = Gram.cursor;
+                      GramView.pageNumberFollow += 1;
+                    }
+                    GramView.currentPageNumber += 1;
                   }
-                  GramView.currentPageNumber +=1;
-                })
+                );
               }
-            }
+            },
           },
           "Page Suivante"
         ),
@@ -70,72 +86,86 @@ var GramView = {
           "button",
           {
             id: "previousPageButton",
-            value: GramView.currentCursorList[GramView.currentPageNumber-1],
+            value: GramView.currentCursorList[GramView.currentPageNumber - 1],
+            style: "float:left",
             onclick: (e) => {
               e.preventDefault();
               e.redraw = false;
-              if (GramView.currentPageNumber-1 >= 0) {
+              if (GramView.currentPageNumber - 1 >= 0) {
                 //Afficher la page précédente sans modifier les curseurs
-                Gram.loadList(GramView.filter, e.target.value).then(function() {
-                  if (GramView.filter == "All") {
-                    GramView.pageNumberAll -=1;
-                  } else {
-                    GramView.pageNumberFollow -=1;
+                Gram.loadList(GramView.filter, e.target.value).then(
+                  function () {
+                    if (GramView.filter == "All") {
+                      GramView.pageNumberAll -= 1;
+                    } else {
+                      GramView.pageNumberFollow -= 1;
+                    }
+                    GramView.currentPageNumber -= 1;
+                    Gram.limitReached = false;
                   }
-                  GramView.currentPageNumber -=1;
-                  Gram.limitReached = false; 
-                })
+                );
               }
-            }
+            },
           },
           "Page Précédente"
         ),
-        m(
-          "label",
-          {
-            for: "page-select",
-          },
-          "Sélectionner une page de résultats:"
-        ),
-        m(
-          "select",
-          {
-            id: "page-select",
-            onchange: (e) => {
-              e.preventDefault();
-              e.redraw = false;
-              GramView.currentPageNumber = parseInt(e.target.value);
-              console.log(e.target.value);
-              if (GramView.filter == "All") {
-                GramView.pageNumberAll = GramView.currentPageNumber;
-              } else {
-                GramView.pageNumberFollow = GramView.currentPageNumber;
-              }
-              //On change de mode, donc changer la liste de curseurs, ainsi que le numero de page
-              //Cependant, ne pas incrementer ces valeurs.
-              Gram.loadList(GramView.filter, GramView.currentCursorList[GramView.currentPageNumber]).then(function() {
-                if (GramView.filter == "All") {
-                  GramView.currentCursorList[GramView.currentPageNumber+1] = Gram.cursor;
-                  GramView.cursorListAll[GramView.currentPageNumber+1] = Gram.cursor;
-                } else {
-                  GramView.currentCursorList[GramView.currentPageNumber+1] = Gram.cursor;
-                  GramView.cursorListFollow[GramView.currentPageNumber+1] = Gram.cursor;
-                }
-              })
+        m("div", { style: "text-align: center" }, [
+          m(
+            "label",
+            {
+              for: "page-select",
             },
-          },
-          //Affiche les pages disponibles.
-          //ok faut que j'ai un maxPageNumber alors
-          //why does it not reverse... reeee..
-          m("option", { disabled:true, selected:true, value:true }, "-- Sélectionner une page --"),
-          [...Array(GramView.currentPageNumber+1).keys()].reverse().map((i) => (m("option", { value: i}, "Page : " + (i+1))))
-        ),
+            "Sélectionner une page de résultats:"
+          ),
+          m(
+            "select",
+            {
+              id: "page-select",
+              onchange: (e) => {
+                e.preventDefault();
+                e.redraw = false;
+                GramView.currentPageNumber = parseInt(e.target.value);
+                console.log(e.target.value);
+                if (GramView.filter == "All") {
+                  GramView.pageNumberAll = GramView.currentPageNumber;
+                } else {
+                  GramView.pageNumberFollow = GramView.currentPageNumber;
+                }
+                //On change de mode, donc changer la liste de curseurs, ainsi que le numero de page
+                //Cependant, ne pas incrementer ces valeurs.
+                Gram.loadList(
+                  GramView.filter,
+                  GramView.currentCursorList[GramView.currentPageNumber]
+                ).then(function () {
+                  if (GramView.filter == "All") {
+                    GramView.currentCursorList[GramView.currentPageNumber + 1] =
+                      Gram.cursor;
+                    GramView.cursorListAll[GramView.currentPageNumber + 1] =
+                      Gram.cursor;
+                  } else {
+                    GramView.currentCursorList[GramView.currentPageNumber + 1] =
+                      Gram.cursor;
+                    GramView.cursorListFollow[GramView.currentPageNumber + 1] =
+                      Gram.cursor;
+                  }
+                });
+              },
+            },
+            //Affiche les pages disponibles.
+            m("option", { disabled:true, selected:true, value:true }, "-- Sélectionner une page --"),
+            [...Array(GramView.currentPageNumber + 1).keys()]
+              .reverse()
+              .map((i) => m("option", { value: i }, "Page : " + (i + 1)))
+          ),
+        ]),
         m(
           "h2",
           {
             id: "pageNumberCounter",
           },
-          "Numéro de la page : " + (GramView.currentPageNumber + 1) + (Gram.limitReached ? " (limite atteinte)" : "")
+          "Numéro de la page : " +
+            (GramView.currentPageNumber + 1) +
+            (Gram.limitReached ? " (limite atteinte)" : "")
         ),
         m(
           "label",
@@ -161,19 +191,30 @@ var GramView = {
               }
               //On change de mode, donc changer la liste de curseurs, ainsi que le numero de page
               //Cependant, ne pas incrementer ces valeurs.
-              Gram.loadList(GramView.filter, GramView.currentCursorList[GramView.currentPageNumber]).then(function() {
+              Gram.loadList(
+                GramView.filter,
+                GramView.currentCursorList[GramView.currentPageNumber]
+              ).then(function () {
                 if (GramView.filter == "All") {
-                  GramView.currentCursorList[GramView.currentPageNumber+1] = Gram.cursor;
-                  GramView.cursorListAll[GramView.currentPageNumber+1] = Gram.cursor;
+                  GramView.currentCursorList[GramView.currentPageNumber + 1] =
+                    Gram.cursor;
+                  GramView.cursorListAll[GramView.currentPageNumber + 1] =
+                    Gram.cursor;
                 } else {
-                  GramView.currentCursorList[GramView.currentPageNumber+1] = Gram.cursor;
-                  GramView.cursorListFollow[GramView.currentPageNumber+1] = Gram.cursor;
+                  GramView.currentCursorList[GramView.currentPageNumber + 1] =
+                    Gram.cursor;
+                  GramView.cursorListFollow[GramView.currentPageNumber + 1] =
+                    Gram.cursor;
                 }
-              })
+              });
             },
           },
           [
-            m("option", { disabled:true, selected:true, value:true }, "-- Sélectionner un filtre --"),
+            m(
+              "option",
+              { disabled: true, selected: true, value: true },
+              "-- Sélectionner un filtre --"
+            ),
             m("option", { value: "All" }, "Toutes"),
             m("option", { value: "SubbedOnly" }, "Mes abonnements"),
           ]
@@ -201,50 +242,54 @@ var GramView = {
                           class: "imageContainer",
                           src: postData.imageURL,
                         }),
+                        m("div", [
+                          m(
+                            "span",
+                            {
+                              class: "likeContainer",
+                              style: { marginRight: "1ex" },
+                            },
+                            postData.likeCounter + " likes"
+                          ),
+                          m(
+                            "button",
+                            {
+                              class: "likeButton",
+                              value: postData.key,
+                              onclick: (e) => {
+                                m.request({
+                                  method: "POST",
+                                  url: "/_ah/api/api/v1/likePost",
+                                  headers: {
+                                    Authorization:
+                                      "Bearer " +
+                                      GoogleAuth.currentUser
+                                        .get()
+                                        .getAuthResponse().id_token,
+                                  },
+                                  params: {
+                                    postId: e.target.value,
+                                  },
+                                }).then((res) => {
+                                  console.log(res);
+                                  if (res.error === undefined) {
+                                    postData.likeCounter += 1;
+                                    e.target.innerText =
+                                      "Unlike"; /* Mensonger pour le moment */
+                                  }
+                                });
+                              },
+                            },
+                            "Like"
+                          ),
+                        ]),
                         m(
                           "div",
                           {
                             class: "descriptionContainer",
+                            style: { margin: "1em 0" },
                           },
                           postData.description
-                        ),
-                        m(
-                          "div",
-                          {
-                            class: "likeContainer",
-                          },
-                          postData.likeCounter + " likes"
-                        ),
-                        m(
-                          "button",
-                          {
-                            class: "likeButton",
-                            value: postData.key,
-                            onclick: (e) => {
-                              m.request({
-                                method: "POST",
-                                url: "/_ah/api/api/v1/likePost",
-                                headers: {
-                                  Authorization:
-                                    "Bearer " +
-                                    GoogleAuth.currentUser
-                                      .get()
-                                      .getAuthResponse().id_token,
-                                },
-                                params: {
-                                  postId: e.target.value,
-                                },
-                              }).then((res) => {
-                                console.log(res);
-                                if (res.error === undefined) {
-                                  postData.likeCounter += 1;
-                                  e.target.innerText =
-                                    "Unlike"; /* Mensonger pour le moment */
-                                }
-                              });
-                            },
-                          },
-                          "Like"
                         ),
                       ]
                     )
