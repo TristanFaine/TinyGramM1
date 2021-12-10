@@ -33,7 +33,6 @@ mvn appengine:run
 ```
 
 - Déploiement Google
-  )
 
 ```
 mvn appengine:deploy
