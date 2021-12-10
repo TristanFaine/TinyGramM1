@@ -3,28 +3,26 @@
 ## Initialisation/build
 
 ```
- git clone hhttps://github.com/TristanFaine/TinyGramM1.git
+ git clone https://github.com/TristanFaine/TinyGramM1.git
  cd TinyGramM1
- mvn install
+ mvn clean install
+ mvn package
 ```
 
 ### Veuillez penser à modifier les paramètres suivants :
 
 - "projet-tinygram-tf" avec votre ID projet google dans pom.xml
 - "projet-tinygram-tf" avec votre ID projet google dans src/main/webapp/WEB-INF/appengine-web.xml
-- Les <env-variables> dans src\main\webapp\WEB-INF\appengine-web.xml
+- Les \<env-variables\> dans src\main\webapp\WEB-INF\appengine-web.xml
 
-## Commandes gcloud (penser à d'abord installer le SDK gcloud : https://cloud.google.com/sdk/install)
+Notre application utilise Cloud Storage pour stocker des données d'images, vous devez donc configurer un projet app engine à l'avance
+### Commandes gcloud pour créer un projet (SDK gcloud : https://cloud.google.com/sdk/install)
 
 ```
 gcloud init (une seule fois pour configurer l'installation locale du SDK)
+gcloud projects create
 gcloud app create
-```
-
-- Avant execution
-
-```
-mvn clean install
+gcloud config set project my-project-id
 ```
 
 - Application en local
@@ -44,13 +42,8 @@ gcloud app browse
 
 ## Accès API REST
 
-- New version of endpoints (see https://cloud.google.com/endpoints/docs/frameworks/java/adding-api-management?hl=fr):
-
 ```
-mvn clean package
-mvn endpoints-framework:openApiDocs
-gcloud endpoints services deploy target/openapi-docs/openapi.json
-mvn appengine:deploy
+https://endpointsportal.projet-tinygram-tf.cloud.goog/
 ```
 
 ## Aperçu des `Kind`
